@@ -22,6 +22,7 @@ jobs:
         
     - name: Installation des dépendances
       run: pip install -r requirements.txt
+      run: pip install chromedriver-autoinstaller && python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
       
     - name: Exécution du bot
       run: python roland_garros_bot.py

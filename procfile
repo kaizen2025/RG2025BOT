@@ -1,1 +1,2 @@
-web: python webapp.py
+web: gunicorn webapp:app
+worker: python roland_garros_bot.py

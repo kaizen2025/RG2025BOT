@@ -4,7 +4,7 @@ name: Roland Garros Bot
 # Déclenché selon un calendrier et manuellement
 on:
   schedule:
-    - cron: '0 */1 * * *'  # Toutes les heures
+    - cron: '*/30 * * * *'  # Toutes les heures
   workflow_dispatch:  # Permet de déclencher manuellement aussi
 
 # Définition des jobs

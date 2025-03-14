@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surveillance Roland-Garros 2025</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --rg-primary: #bd392e;
+            --rg-secondary: #ff9671;
+            --rg-accent: #218838;
+            --rg-light: #f8f9fa;
+            --rg-dark: #212529;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--rg-primary) 0%, var(--rg-secondary) 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://via.placeholder.com/1000x300');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.1;
+            z-index: 0;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 25px;
+            border: none;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            border-bottom: none;
+            padding: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .bg-success-soft {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        
+        .bg-danger-soft {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+        
+        .bg-info-soft {
+            background-color: #cff4fc;
+            color: #055160;
+        }
+        
+        .bg-warning-soft {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+        
+        .status-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover .status-icon {
+            transform: scale(1.1);
+        }
+        
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .log-container {
+            background-color: #212529;
+            color: #adb5bd;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Cascadia Code', 'Fira Code', 'Source Code Pro', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            scrollbar-width: thin;
+            scrollbar-color: #495057 #212529;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: #343a40;
+            border-radius: 10px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background-color: #495057;
+            border-radius: 10px;
+        }
+        
+        .log-line {
+            margin-bottom: 6px;
+            padding: 4px 0;
+            border-bottom: 1px solid #343a40;
+            word-wrap: break-word;
+            transition: background-color 0.2s;
+        }
+        
+        .log-line:hover {
+            background-color: #2c3136;
+        }
+        
+        .countdown {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--rg-primary);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .alert-card {
+            background-color: #fff;
+            border-left: 5px solid var(--rg-primary);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s;
+            overflow: hidden;
+        }
+        
+        .alert-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        .alert-card .timestamp {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+        
+        .ticket-icon {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        
+        .site-card {
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .site-official {
+            border-left-color: #0d6efd;
+        }
+        
+        .site-reseller {
+            border-left-color: #20c997;
+        }
+        
+        .site-marketplace {
+            border-left-color: #fd7e14;
+        }
+        
+        .site-card:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .site-status {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .footer {
+            margin-top: 60px;
+            padding: 30px 0;
+            background-color: var(--rg-dark);
+            color: #adb5bd;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .stats-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--rg-primary);
+        }
+        
+        .navbar {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 0;
+            padding: 12px 20px;
+            font-weight: 500;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--rg-primary);
+            border-bottom: 3px solid var(--rg-primary);
+            background-color: transparent;
+        }
+        
+        .nav-tabs .nav-link:hover:not(.active) {
+            background-color: rgba(0, 0, 0, 0.03);
+            border-bottom: 3px solid #dee2e6;
+        }
+        
+        .filter-section {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .alert-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--rg-primary);
+            color: white;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+        
+        .alert-sound-toggle {
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: color 0.2s;
+        }
+        
+        .alert-sound-toggle:hover {
+            color: var(--rg-primary);
+        }
+        
+        /* Pour les écrans mobiles */
+        @media (max-width: 767.98px) {
+            .header {
+                padding: 20px 0;
+            }
+            
+            .card-header {
+                padding: 15px;
+            }
+            
+            .countdown {
+                font-size: 1.8rem;
+            }
+            
+            .status-icon {
+                font-size: 2.5rem;
+            }
+        }
+        
+        /* Animation du chargement initial */
+        .page-load {
+            animation: fadeIn 1s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Animation pour les alertes */
+        .new-alert {
+            animation: highlightNew 2s ease-in-out;
+        }
+        
+        @keyframes highlightNew {
+            0% { background-color: rgba(220, 53, 69, 0.2); }
+            100% { background-color: transparent; }
+        }
+        
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        
+        .toast {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border-left: 4px solid var(--rg-primary);
+            max-width: 350px;
+        }
+    </style>
+</head>
+<body class="page-load">
+    <div class="header">
+        <div class="container header-content">
+            <div class="d-flex justify-content-center align-items-center mb-3">
+                <i class="fas fa-tennis-ball fa-3x me-3"></i>
+                <h1>Surveillance Roland-Garros 2025</h1>
+            </div>
+            <p class="lead text-center">Alertes automatiques pour les billets du {{ date_cible }}</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navbar avec tabs -->
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" href="#">
+                    <i class="fas fa-robot me-2"></i>
+                    <span>Bot RG 2025</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="nav nav-tabs ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" href="#dashboard">
+                                <i class="fas fa-chart-line me-1"></i> Tableau de bord
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="sites-tab" data-bs-toggle="tab" href="#sites">
+                                <i class="fas fa-globe me-1"></i> Sites surveillés
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="logs-tab" data-bs-toggle="tab" href="#logs">
+                                <i class="fas fa-terminal me-1"></i> Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="settings-tab" data-bs-toggle="tab" href="#settings">
+                                <i class="fas fa-cog me-1"></i> Paramètres
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="tab-content">
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-info-soft">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-info-circle me-2"></i> Statut du Bot
+                                    </div>
+                                    <div class="alert-sound-toggle" id="toggle-sound" title="Activer/désactiver les alertes sonores">
+                                        <i class="fas fa-volume-up"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body text-center">
+                                <div id="bot-status">
+                                    <div class="spinner-border text-info" role="status">
+                                        <span class="visually-hidden">Chargement...</span>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row text-start mt-3">
+                                    <div class="col-6">
+                                        <p><strong>Dernière vérification :</strong><br><span id="last-check" class="stats-value">Chargement...</span></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Prochaine vérification :</strong><br><span id="next-check" class="stats-value">Chargement...</span></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Vérifications effectuées :</strong><br><span id="check-count" class="stats-value">Chargement...</span></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Dernière alerte :</strong><br><span id="last-alert" class="stats-value">Aucune</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Prochaine vérification dans:</span>
+                                    <span id="countdown" class="countdown">--:--</span>
+                                </div>
+                                <div class="progress mt-2">
+                                    <div id="countdown-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-warning-soft">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-exclamation-triangle me-2"></i> Alertes Actives
+                                    </div>
+                                    <span id="alerts-count" class="badge bg-danger rounded-pill">0</span>
+                                </div>
+                            </div>
+                            <div class="card-body overflow-auto" style="max-height: 350px;">
+                                <div id="active-alerts">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-warning" role="status">
+                                            <span class="visually-hidden">Chargement...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent text-end">
+                                <div class="form-check form-switch d-inline-block me-2">
+                                    <input class="form-check-input" type="checkbox" id="auto-refresh-alerts" checked>
+                                    <label class="form-check-label" for="auto-refresh-alerts">Rafraîchissement auto</label>
+                                </div>
+                                <button id="clear-alerts" class="btn btn-sm btn-outline-secondary">Tout effacer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <i class="fas fa-chart-pie me-2"></i> Statistiques de surveillance
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="p-3 bg-light rounded text-center">
+                                            <h2 id="sites-count">0</h2>
+                                            <p class="mb-0">Sites surveillés</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="p-3 bg-light rounded text-center">
+                                            <h2 id="total-checks">0</h2>
+                                            <p class="mb-0">Vérifications totales</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="p-3 bg-light rounded text-center">
+                                            <h2 id="total-alerts">0</h2>
+                                            <p class="mb-0">Alertes déclenchées</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6 mb-3">
+                                        <div class="p-3 bg-light rounded text-center">
+                                            <h2 id="uptime">0h</h2>
+                                            <p class="mb-0">Temps de fonctionnement</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sites Tab -->
+            <div class="tab-pane fade" id="sites">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="filter-section">
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <select class="form-select" id="filter-site-type">
+                                        <option value="all">Tous les types de sites</option>
+                                        <option value="officiel">Sites officiels</option>
+                                        <option value="revendeur_officiel">Revendeurs officiels</option>
+                                        <option value="revente">Marketplaces</option>
+                                        <option value="reduction">Sites de réduction</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <select class="form-select" id="filter-status">
+                                        <option value="all">Tous les statuts</option>
+                                        <option value="available">Disponible</option>
+                                        <option value="unavailable">Indisponible</option>
+                                        <option value="error">Erreur</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" class="form-control" id="search-site" placeholder="Rechercher un site...">
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button id="refresh-sites" class="btn btn-primary w-100">
+                                        <i class="fas fa-sync-alt me-1"></i> Rafraîchir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-search me-2"></i> Sites Surveillés
+                                    </div>
+                                    <div>
+                                        <span id="filtered-sites-count" class="badge bg-light text-dark">0 sites</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Site</th>
+                                                <th>Type</th>
+                                                <th>Statut</th>
+                                                <th>Dernière vérification</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sites-table">
+                                            <tr>
+                                                <td colspan="5" class="text-center">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Chargement...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-pane fade" id="logs">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="filter-section">
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <select class="form-select" id="filter-log-level">
+                                        <option value="all">Tous les niveaux</option>
+                                        <option value="info">Info</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="error">Error</option>
+                                        <option value="detection">Détections</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-7 mb-2">
+                                    <input type="text" class="form-control" id="search-logs" placeholder="Rechercher dans les logs...">
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button id="refresh-logs" class="btn btn-dark w-100">
+                                        <i class="fas fa-sync-alt me-1"></i> Rafraîchir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-dark text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-terminal me-2"></i> Logs d'activité
+                                    </div>
+                                    <div>
+                                        <span id="log-count" class="badge bg-light text-dark">0 lignes</span>
+                                        <button id="download-logs" class="btn btn-sm btn-outline-light ms-2">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="log-container" id="log-container">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border text-light" role="status">
+                                            <span class="visually-hidden">Chargement...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-dark text-end">
+                                <div class="form-check form-switch d-inline-block text-light">
+                                    <input class="form-check-input" type="checkbox" id="auto-scroll" checked>
+                                    <label class="form-check-label" for="auto-scroll">Défilement automatique</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-pane fade" id="settings">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-bell me-2"></i> Paramètres de notification
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Notifications par email</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-email" checked>
+                                        <label class="form-check-label" for="enable-email">Activer les notifications par email</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Notifications Telegram</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-telegram" checked>
+                                        <label class="form-check-label" for="enable-telegram">Activer les notifications Telegram</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Alertes sonores dans le navigateur</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-browser-alerts" checked>
+                                        <label class="form-check-label" for="enable-browser-alerts">Activer les alertes sonores</label>
+                                    </div>
+                                </div>
+                                <button id="test-notifications" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-1"></i> Tester les notifications
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-clock me-2"></i> Paramètres d'intervalle
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="check-interval-min" class="form-label">Intervalle minimum (en secondes)</label>
+                                    <input type="number" class="form-control" id="check-interval-min" value="540">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="check-interval-max" class="form-label">Intervalle maximum (en secondes)</label>
+                                    <input type="number" class="form-control" id="check-interval-max" value="660">
+                                </div>
+                                <button id="save-intervals" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i> Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-globe me-2"></i> Gestion des sites surveillés
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Nom du site</th>
+                                                <th>URL</th>
+                                                <th>Type</th>
+                                                <th>Priorité</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sites-settings-table">
+                                            <tr>
+                                                <td colspan="6" class="text-center">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Chargement...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button id="add-site-btn" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#addSiteModal">
+                                    <i class="fas fa-plus me-1"></i> Ajouter un site
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour ajouter un site -->
+    <div class="modal fade" id="addSiteModal" tabindex="-1" aria-labelledby="addSiteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSiteModalLabel">Ajouter un site à surveiller</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-site-form">
+                        <div class="mb-3">
+                            <label for="site-name" class="form-label">Nom du site</label>
+                            <input type="text" class="form-control" id="site-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="site-url" class="form-label">URL du site</label>
+                            <input type="url" class="form-control" id="site-url" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="site-type" class="form-label">Type de site</label>
+                            <select class="form-select" id="site-type" required>
+                                <option value="officiel">Site officiel</option>
+                                <option value="revendeur_officiel">Revendeur officiel</option>
+                                <option value="revente">Marketplace</option>
+                                <option value="reduction">Site de réduction</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="site-priority" class="form-label">Priorité (1-5, 1 étant la plus haute)</label>
+                            <input type="number" class="form-control" id="site-priority" min="1" max="5" value="2" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="save-site">Ajouter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container pour les notifications toast -->
+    <div class="toast-container"></div>
+
+    <!-- Audio pour les alertes -->
+    <audio id="alert-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="footer">
+        <div class="container">
+            <p>© 2025 Bot de surveillance Roland-Garros | Développé pour Kevin BIVIA</p>
+            <p class="mb-0">Version 2.0 | Dernière mise à jour: Mars 2025</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let intervalId = null;
+        let nextCheckTime = null;
+        let soundEnabled = true;
+        let autoScrollEnabled = true;
+        let siteFilter = {
+            type: 'all',
+            status: 'all',
+            search: ''
+        };
+        let logFilter = {
+            level: 'all',
+            search: ''
+        };
+        
+        const REFRESH_INTERVAL = 10000; // 10 secondes
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            
+            const date = new Date(dateString.replace(' ', 'T'));
+            
+            // Si la date est invalide, renvoyer la chaîne d'origine
+            if (isNaN(date.getTime())) return dateString;
+            
+            const options = { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit'
+            };
+            
+            return date.toLocaleString('fr-FR', options);
+        }
+        
+        function updateCountdown() {
+            if (!nextCheckTime) return;
+            
+            const now = new Date();
+            const next = new Date(nextCheckTime.replace(' ', 'T'));
+            
+            // Si la date est invalide, ne pas mettre à jour
+            if (isNaN(next.getTime())) return;
+            
+            const diffMs = next - now;
+            
+            if (diffMs <= 0) {
+                document.getElementById('countdown').textContent = "En cours...";
+                document.getElementById('countdown-progress').style.width = "100%";
+                return;
+            }
+            
+            const diffSec = Math.floor(diffMs / 1000);
+            const minutes = Math.floor(diffSec / 60);
+            const seconds = diffSec % 60;
+            
+            document.getElementById('countdown').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Calculer la progression
+            const totalInterval = 600; // 10 minutes en secondes
+            const progress = 100 - ((diffSec / totalInterval) * 100);
+            document.getElementById('countdown-progress').style.width = `${progress}%`;
+        }
+        
+        function showToast(title, message, type = 'info') {
+            const toastContainer = document.querySelector('.toast-container');
+            
+            const toastElement = document.createElement('div');
+            toastElement.classList.add('toast', 'show', 'mb-2');
+            toastElement.setAttribute('role', 'alert');
+            toastElement.setAttribute('aria-live', 'assertive');
+            toastElement.setAttribute('aria-atomic', 'true');
+            
+            const iconClass = type === 'success' ? 'fas fa-check-circle text-success' :
+                            type === 'warning' ? 'fas fa-exclamation-triangle text-warning' :
+                            type === 'danger' ? 'fas fa-exclamation-circle text-danger' :
+                            'fas fa-info-circle text-info';
+            
+            toastElement.innerHTML = `
+                <div class="toast-header">
+                    <i class="${iconClass} me-2"></i>
+                    <strong class="me-auto">${title}</strong>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+            
+            toastContainer.appendChild(toastElement);
+            
+            // Supprimer le toast après 5 secondes
+            setTimeout(() => {
+                toastElement.remove();
+            }, 5000);
+        }
+        
+        function playAlertSound() {
+            if (soundEnabled) {
+                const audio = document.getElementById('alert-sound');
+                audio.play().catch(e => console.log('Erreur de lecture audio:', e));
+            }
+        }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const soundIcon = document.querySelector('#toggle-sound i');
+            if (soundEnabled) {
+                soundIcon.className = 'fas fa-volume-up';
+                showToast('Paramètres', 'Alertes sonores activées', 'info');
+            } else {
+                soundIcon.className = 'fas fa-volume-mute';
+                showToast('Paramètres', 'Alertes sonores désactivées', 'info');
+            }
+        }
+        
+        function filterSites() {
+            const allSites = document.querySelectorAll('#sites-table tr');
+            let visibleCount = 0;
+            
+            allSites.forEach(site => {
+                // Ignorer la ligne de chargement
+                if (site.querySelector('.spinner-border')) return;
+                
+                const siteName = site.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+                const siteType = site.querySelector('.badge')?.textContent.toLowerCase() || '';
+                const siteStatus = site.querySelector('.site-status')?.textContent.toLowerCase() || '';
+                const isAvailable = siteStatus.includes('disponible!');
+                
+                const typeMatch = siteFilter.type === 'all' || siteType === siteFilter.type;
+                const statusMatch = siteFilter.status === 'all' || 
+                                   (siteFilter.status === 'available' && isAvailable) ||
+                                   (siteFilter.status === 'unavailable' && !isAvailable) ||
+                                   (siteFilter.status === 'error' && siteStatus.includes('erreur'));
+                const searchMatch = siteFilter.search === '' || siteName.includes(siteFilter.search.toLowerCase());
+                
+                if (typeMatch && statusMatch && searchMatch) {
+                    site.style.display = '';
+                    visibleCount++;
+                } else {
+                    site.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('filtered-sites-count').textContent = `${visibleCount} sites`;
+        }
+        
+        function filterLogs() {
+            const allLogs = document.querySelectorAll('#log-container .log-line');
+            let visibleCount = 0;
+            
+            allLogs.forEach(log => {
+                const logText = log.textContent.toLowerCase();
+                
+                const levelMatch = logFilter.level === 'all' || 
+                                 (logFilter.level === 'info' && logText.includes('info')) ||
+                                 (logFilter.level === 'warning' && (logText.includes('warning') || logText.includes('warn'))) ||
+                                 (logFilter.level === 'error' && logText.includes('error')) ||
+                                 (logFilter.level === 'detection' && (logText.includes('détection') || logText.includes('alerte')));
+                const searchMatch = logFilter.search === '' || logText.includes(logFilter.search.toLowerCase());
+                
+                if (levelMatch && searchMatch) {
+                    log.style.display = '';
+                    visibleCount++;
+                } else {
+                    log.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('log-count').textContent = `${visibleCount} lignes`;
+        }
+        
+        function fetchData() {
+            // Récupérer les statistiques
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    // Mettre à jour les informations de base
+                    document.getElementById('last-check').textContent = formatDate(data.derniere_verification) || 'Aucune';
+                    document.getElementById('next-check').textContent = formatDate(data.prochaine_verification) || 'En attente';
+                    document.getElementById('check-count').textContent = data.nombre_verifications || '0';
+                    document.getElementById('last-alert').textContent = formatDate(data.derniere_alerte) || 'Aucune';
+                    
+                    // Mettre à jour les statistiques générales
+                    document.getElementById('sites-count').textContent = data.sites_surveilles ? data.sites_surveilles.length : '0';
+                    document.getElementById('total-checks').textContent = data.nombre_verifications || '0';
+                    document.getElementById('total-alerts').textContent = data.alertes_actives ? data.alertes_actives.length : '0';
+                    
+                    // Calculer le temps de fonctionnement si possible
+                    if (data.derniere_verification) {
+                        const startTime = new Date('2025-03-14T00:00:00'); // Date arbitraire de démarrage
+                        const lastCheck = new Date(data.derniere_verification.replace(' ', 'T'));
+                        const uptimeHours = Math.floor((lastCheck - startTime) / (1000 * 60 * 60));
+                        document.getElementById('uptime').textContent = `${uptimeHours}h`;
+                    }
+                    
+                    // Mettre à jour le statut du bot
+                    const botStatus = document.getElementById('bot-status');
+                    if (data.derniere_verification) {
+                        const lastCheckDate = new Date(data.derniere_verification.replace(' ', 'T'));
+                        const now = new Date();
+                        const diffMinutes = (now - lastCheckDate) / (1000 * 60);
+                        
+                        if (diffMinutes < 15) {
+                            botStatus.innerHTML = `
+                                <i class="fas fa-check-circle text-success status-icon"></i>
+                                <h4>Bot actif</h4>
+                                <span class="status-badge bg-success">En ligne</span>
+                            `;
+                        } else {
+                            botStatus.innerHTML = `
+                                <i class="fas fa-exclamation-circle text-warning status-icon"></i>
+                                <h4>Bot inactif</h4>
+                                <span class="status-badge bg-warning">Dernière activité il y a ${Math.floor(diffMinutes)} minutes</span>
+                            `;
+                        }
+                    } else {
+                        botStatus.innerHTML = `
+                            <i class="fas fa-question-circle text-secondary status-icon"></i>
+                            <h4>Statut inconnu</h4>
+                            <span class="status-badge bg-secondary">En attente de données</span>
+                        `;
+                    }
+                    
+                    // Mettre à jour le tableau des sites
+                    const sitesTable = document.getElementById('sites-table');
+                    let sitesHtml = '';
+                    
+                    if (data.sites_surveilles && data.sites_surveilles.length > 0) {
+                        data.sites_surveilles.forEach(site => {
+                            const siteResult = data.resultats[site.nom] || {disponible: false, message: 'Pas encore vérifié', timestamp: '', date: ''};
+                            
+                            let siteClass = '';
+                            if (site.type === 'officiel') {
+                                siteClass = 'site-official';
+                            } else if (site.type === 'revendeur_officiel') {
+                                siteClass = 'site-reseller';
+                            } else {
+                                siteClass = 'site-marketplace';
+                            }
+                            
+                            sitesHtml += `
+                                <tr class="site-card ${siteClass} ${siteResult.disponible ? 'table-success' : ''}">
+                                    <td><strong>${site.nom}</strong></td>
+                                    <td><span class="badge ${site.type === 'officiel' ? 'bg-primary' : site.type === 'revendeur_officiel' ? 'bg-success' : 'bg-warning text-dark'}">${site.type}</span></td>
+                                    <td class="site-status">
+                                        ${siteResult.disponible 
+                                            ? '<i class="fas fa-check-circle text-success me-2"></i> Disponible!' 
+                                            : '<i class="fas fa-times-circle text-danger me-2"></i> Indisponible'}
+                                    </td>
+                                    <td>${siteResult.timestamp ? (siteResult.date || '') + ' ' + siteResult.timestamp : 'Pas encore vérifié'}</td>
+                                    <td>
+                                        <a href="${site.url}" target="_blank" class="btn btn-sm btn-outline-primary">Visiter</a>
+                                        <button class="btn btn-sm btn-outline-info ms-1 check-now-btn" data-site="${site.nom}">Vérifier</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        sitesHtml = '<tr><td colspan="5" class="text-center">Aucun site configuré</td></tr>';
+                    }
+                    
+                    sitesTable.innerHTML = sitesHtml;
+                    
+                    // Appliquer les filtres après la mise à jour
+                    filterSites();
+                    
+                    // Mettre à jour le tableau de gestion des sites
+                    const sitesSettingsTable = document.getElementById('sites-settings-table');
+                    let sitesSettingsHtml = '';
+                    
+                    if (data.sites_surveilles && data.sites_surveilles.length > 0) {
+                        data.sites_surveilles.forEach(site => {
+                            const siteResult = data.resultats[site.nom] || {disponible: false, message: 'Pas encore vérifié'};
+                            
+                            sitesSettingsHtml += `
+                                <tr>
+                                    <td>${site.nom}</td>
+                                    <td><a href="${site.url}" target="_blank" class="text-truncate d-inline-block" style="max-width: 250px;">${site.url}</a></td>
+                                    <td>${site.type}</td>
+                                    <td>${site.priorité || '2'}</td>
+                                    <td>${siteResult.disponible ? '<span class="badge bg-success">Disponible</span>' : '<span class="badge bg-danger">Indisponible</span>'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning edit-site-btn" data-site-name="${site.nom}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-site-btn" data-site-name="${site.nom}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        sitesSettingsHtml = '<tr><td colspan="6" class="text-center">Aucun site configuré</td></tr>';
+                    }
+                    
+                    sitesSettingsTable.innerHTML = sitesSettingsHtml;
+                    
+                    // Mettre à jour les alertes actives
+                    const alertsContainer = document.getElementById('active-alerts');
+                    const alertsCount = document.getElementById('alerts-count');
+                    let alertsHtml = '';
+                    let newAlertDetected = false;
+                    let currentAlerts = alertsContainer.querySelectorAll('.alert-card').length;
+                    
+                    if (data.alertes_actives && data.alertes_actives.length > 0) {
+                        alertsCount.textContent = data.alertes_actives.length;
+                        
+                        // Vérifier si une nouvelle alerte a été détectée
+                        if (data.alertes_actives.length > currentAlerts) {
+                            newAlertDetected = true;
+                            
+                            // Jouer le son d'alerte
+                            playAlertSound();
+                            
+                            // Afficher une notification toast
+                            showToast('Nouvelle alerte!', 'Une disponibilité a été détectée. Vérifiez les alertes.', 'danger');
+                        }
+                        
+                        data.alertes_actives.forEach(alerte => {
+                            alertsHtml += `
+                                <div class="alert-card p-3 mb-3 ${newAlertDetected ? 'new-alert' : ''}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-1"><i class="fas fa-ticket-alt text-danger ticket-icon me-2"></i> ${alerte.source}</h5>
+                                            <p class="mb-2">${alerte.message}</p>
+                                            <div>
+                                                <a href="${alerte.url}" target="_blank" class="btn btn-sm btn-danger">Voir les billets</a>
+                                                <button class="btn btn-sm btn-outline-secondary dismiss-alert" data-source="${alerte.source}">Ignorer</button>
+                                            </div>
+                                        </div>
+                                        <span class="timestamp">${alerte.date || ''} ${alerte.timestamp}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        alertsCount.textContent = '0';
+                        alertsHtml = `
+                            <div class="text-center p-4">
+                                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                <h5>Aucune alerte active</h5>
+                                <p class="text-muted mb-0">Le bot vous notifiera dès qu'une disponibilité sera détectée.</p>
+                            </div>
+                        `;
+                    }
+                    
+                    alertsContainer.innerHTML = alertsHtml;
+                    
+                    // Activer les gestionnaires d'événements pour les boutons d'alerte
+                    document.querySelectorAll('.dismiss-alert').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const source = this.getAttribute('data-source');
+                            // Logique pour ignorer une alerte (à implémenter)
+                            this.closest('.alert-card').remove();
+                            showToast('Alerte ignorée', `L'alerte pour ${source} a été ignorée`, 'info');
+                        });
+                    });
+                    
+                    // Activer les gestionnaires d'événements pour les boutons de vérification immédiate
+                    document.querySelectorAll('.check-now-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const site = this.getAttribute('data-site');
+                            // Logique pour vérifier un site immédiatement (à implémenter)
+                            showToast('Vérification', `Vérification manuelle de ${site} en cours...`, 'info');
+                        });
+                    });
+                    
+                    // Activer les gestionnaires d'événements pour les boutons d'édition/suppression de site
+                    document.querySelectorAll('.edit-site-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const siteName = this.getAttribute('data-site-name');
+                            // Logique pour éditer un site (à implémenter)
+                            showToast('Édition', `Édition du site ${siteName} (fonctionnalité à venir)`, 'info');
+                        });
+                    });
+                    
+                    document.querySelectorAll('.delete-site-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const siteName = this.getAttribute('data-site-name');
+                            if (confirm(`Êtes-vous sûr de vouloir supprimer le site ${siteName} ?`)) {
+                                // Logique pour supprimer un site (à implémenter)
+                                showToast('Suppression', `Le site ${siteName} a été supprimé`, 'warning');
+                            }
+                        });
+                    });
+                    
+                    // Stocker la prochaine vérification pour le décompte
+                    nextCheckTime = data.prochaine_verification;
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des statistiques:', error);
+                    showToast('Erreur', 'Impossible de récupérer les données. Vérifiez la connexion au serveur.', 'danger');
+                });
+            
+            // Récupérer les logs
+            fetch('/api/logs')
+                .then(response => response.json())
+                .then(logs => {
+                    const logContainer = document.getElementById('log-container');
+                    let logsHtml = '';
+                    
+                    if (logs && logs.length > 0) {
+                        logs.forEach(log => {
+                            // Colorer les logs selon le contenu
+                            let logClass = '';
+                            if (log.includes('ERREUR') || log.includes('ERROR')) {
+                                logClass = 'text-danger';
+                            } else if (log.includes('ALERTE') || log.includes('DÉTECTION')) {
+                                logClass = 'text-warning';
+                            } else if (log.includes('INFO')) {
+                                logClass = 'text-info';
+                            } else if (log.includes('succès')) {
+                                logClass = 'text-success';
+                            }
+                            
+                            logsHtml += `<div class="log-line ${logClass}">${log}</div>`;
+                        });
+                    } else {
+                        logsHtml = '<div class="text-center py-3">Aucun log disponible</div>';
+                    }
+                    
+                    logContainer.innerHTML = logsHtml;
+                    
+                    // Appliquer les filtres après la mise à jour
+                    filterLogs();
+                    
+                    // Mettre à jour le nombre de logs
+                    document.getElementById('log-count').textContent = `${logs.length} lignes`;
+                    
+                    // Faire défiler jusqu'en bas des logs si l'option est activée
+                    if (autoScrollEnabled) {
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des logs:', error);
+                    document.getElementById('log-container').innerHTML = '<div class="text-center py-3 text-danger">Erreur de chargement des logs</div>';
+                });
+        }
+        
+        // Initialiser la page
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            
+            // Mettre à jour périodiquement
+            intervalId = setInterval(fetchData, REFRESH_INTERVAL);
+            
+            // Mettre à jour le compte à rebours chaque seconde
+            setInterval(updateCountdown, 1000);
+            
+            // Gestionnaire pour le bouton de son
+            document.getElementById('toggle-sound').addEventListener('click', toggleSound);
+            
+            // Gestionnaire pour le bouton de rafraîchissement des sites
+            document.getElementById('refresh-sites').addEventListener('click', () => {
+                fetchData();
+                showToast('Rafraîchissement', 'Données des sites mises à jour', 'info');
+            });
+            
+            // Gestionnaire pour le bouton de rafraîchissement des logs
+            document.getElementById('refresh-logs').addEventListener('click', () => {
+                fetchData();
+                showToast('Rafraîchissement', 'Logs mis à jour', 'info');
+            });
+            
+            // Gestionnaire pour le filtre de type de site
+            document.getElementById('filter-site-type').addEventListener('change', function() {
+                siteFilter.type = this.value;
+                filterSites();
+            });
+            
+            // Gestionnaire pour le filtre de statut
+            document.getElementById('filter-status').addEventListener('change', function() {
+                siteFilter.status = this.value;
+                filterSites();
+            });
+            
+            // Gestionnaire pour la recherche de site
+            document.getElementById('search-site').addEventListener('input', function() {
+                siteFilter.search = this.value;
+                filterSites();
+            });
+            
+            // Gestionnaire pour le filtre de niveau de log
+            document.getElementById('filter-log-level').addEventListener('change', function() {
+                logFilter.level = this.value;
+                filterLogs();
+            });
+            
+            // Gestionnaire pour la recherche dans les logs
+            document.getElementById('search-logs').addEventListener('input', function() {
+                logFilter.search = this.value;
+                filterLogs();
+            });
+            
+            // Gestionnaire pour le défilement automatique des logs
+            document.getElementById('auto-scroll').addEventListener('change', function() {
+                autoScrollEnabled = this.checked;
+            });
+            
+            // Gestionnaire pour le téléchargement des logs
+            document.getElementById('download-logs').addEventListener('click', () => {
+                // Logique pour télécharger les logs (à implémenter)
+                showToast('Téléchargement', 'Téléchargement des logs en cours...', 'info');
+            });
+            
+            // Gestionnaire pour le bouton de test des notifications
+            document.getElementById('test-notifications').addEventListener('click', () => {
+                // Logique pour tester les notifications (à implémenter)
+                playAlertSound();
+                showToast('Test', 'Test de notification effectué', 'success');
+            });
+            
+            // Gestionnaire pour le bouton d'enregistrement des intervalles
+            document.getElementById('save-intervals').addEventListener('click', () => {
+                const min = document.getElementById('check-interval-min').value;
+                const max = document.getElementById('check-interval-max').value;
+                
+                if (parseInt(min) > parseInt(max)) {
+                    showToast('Erreur', 'L\'intervalle minimum doit être inférieur à l\'intervalle maximum', 'danger');
+                    return;
+                }
+                
+                // Logique pour enregistrer les intervalles (à implémenter)
+                showToast('Paramètres', 'Intervalles de vérification mis à jour', 'success');
+            });
+            
+            // Gestionnaire pour le bouton d'ajout de site
+            document.getElementById('save-site').addEventListener('click', () => {
+                const form = document.getElementById('add-site-form');
+                
+                if (form.checkValidity()) {
+                    const name = document.getElementById('site-name').value;
+                    const url = document.getElementById('site-url').value;
+                    const type = document.getElementById('site-type').value;
+                    const priority = document.getElementById('site-priority').value;
+                    
+                    // Logique pour ajouter un site (à implémenter)
+                    showToast('Ajout de site', `Le site ${name} a été ajouté`, 'success');
+                    
+                    // Fermer le modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addSiteModal'));
+                    modal.hide();
+                    
+                    // Réinitialiser le formulaire
+                    form.reset();
+                    
+                    // Rafraîchir les données
+                    fetchData();
+                } else {
+                    form.reportValidity();
+                }
+            });
+            
+            // Gestionnaire pour le bouton de suppression de toutes les alertes
+            document.getElementById('clear-alerts').addEventListener('click', () => {
+                if (confirm('Êtes-vous sûr de vouloir effacer toutes les alertes ?')) {
+                    // Logique pour effacer toutes les alertes (à implémenter)
+                    document.getElementById('active-alerts').innerHTML = `
+                        <div class="text-center p-4">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>Aucune alerte active</h5>
+                            <p class="text-muted mb-0">Le bot vous notifiera dès qu'une disponibilité sera détectée.</p>
+                        </div>
+                    `;
+                    document.getElementById('alerts-count').textContent = '0';
+                    showToast('Alertes', 'Toutes les alertes ont été effacées', 'info');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

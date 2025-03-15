@@ -642,10 +642,46 @@ def envoyer_alerte_telegram(message, screenshots=None):
         logger.error(f"Erreur lors de l'envoi de la notification Telegram: {e}")
         return False
 
-def configurer_bot_telegram():
+Replace this function:
 
+```python
+def configurer_bot_telegram():
     logger.info("Instructions de configuration du bot Telegram générées")
     return instructions
+```
+
+With:
+
+```python
+def configurer_bot_telegram():
+    """Configure le bot Telegram et renvoie des instructions pour le configurer."""
+    instructions = f"""
+    === CONFIGURATION DU BOT TELEGRAM ===
+    
+    Pour recevoir des alertes sur votre iPhone, suivez ces étapes:
+    
+    1. Ouvrez Telegram et recherchez BotFather (@BotFather)
+    2. Envoyez la commande /newbot
+    3. Suivez les instructions pour créer un nouveau bot
+    4. BotFather vous donnera un TOKEN qui ressemble à: 123456789:ABCDefGhIJKlmNoPQRsTUVwxyZ
+    5. Copiez ce TOKEN et remplacez "votre_token_bot_telegram" dans ce script
+    
+    6. Ensuite, ouvrez le bot que vous venez de créer et envoyez-lui un message (par exemple "Bonjour")
+    7. Visitez https://api.telegram.org/bot<VOTRE_TOKEN>/getUpdates dans votre navigateur
+       (remplacez <VOTRE_TOKEN> par le token obtenu précédemment)
+    8. Cherchez "chat":{{"id":XXXXXXXX dans la réponse - ce nombre est votre CHAT_ID
+    9. Copiez ce CHAT_ID et remplacez "votre_chat_id" dans ce script
+    
+    10. Redémarrez le script, et vous recevrez maintenant des notifications sur votre iPhone via Telegram!
+    
+    Votre bot est configuré pour surveiller Roland-Garros pour le {DATE_CIBLE} et vous alerter dès qu'une disponibilité est détectée.
+    """
+    
+    logger.info("Instructions de configuration du bot Telegram générées")
+    return instructions
+```
+
+Note the fix in line 8 where I've doubled the curly braces `{{"id":XXXXXXXX` to escape them properly.
 
 # Fonction pour prendre une capture d'écran avec Selenium
 def prendre_screenshot(driver, highlight_elements=None):

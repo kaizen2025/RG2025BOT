@@ -3,9 +3,10 @@ beautifulsoup4==4.12.3
 pyTelegramBotAPI==4.16.1
 python-dotenv==1.0.1
 flask==2.2.3
+werkzeug==2.2.3  # Specify version to fix url_quote import error
 gunicorn==20.1.0
 selenium==4.10.0
-chromedriver-autoinstaller==0.6.3  # Replaces webdriver-manager
+chromedriver-autoinstaller==0.6.3  # Replaced webdriver-manager
 cloudscraper==1.2.71
 lxml==4.9.3
 pyautogui==0.9.54  # For mouse simulation

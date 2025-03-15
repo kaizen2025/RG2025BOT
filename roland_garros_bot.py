@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -13,6 +16,10 @@ import json
 import socket
 import ssl
 from dotenv import load_dotenv
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+
+# Nouvelle importation pour contourner les protections (remplace Selenium)
 import cloudscraper
 from lxml import html
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -64,7 +71,7 @@ USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.54'
 ]
 
-# Liste améliorée des sites à surveiller (cf. :contentReference[oaicite:3]{index=3})
+# Liste améliorée des sites à surveiller (cf. l'original)
 SITES_AMELIORES = [
     {
         "nom": "Site Officiel Roland-Garros",
@@ -161,15 +168,53 @@ SITES_AMELIORES = [
             "X-Requested-With": "XMLHttpRequest"
         }
     },
-    # Autres sites (Rakuten, Seetickets, Eventim, etc.)...
+    {
+        "nom": "Rakuten Billets",
+        "url": "https://fr.shopping.rakuten.com/event/roland-garros",
+        "type": "revente",
+        "priorité": 3,
+        "selectors": {
+            "liste_billets": ".listing, .event-tickets",
+            "date_items": ".event-date, .ticket-date",
+            "prix": ".price, .ticket-price",
+            "disponibilite": ".available, .status"
+        },
+        "mots_cles_additionnels": ["mai 2025", "31/05", "samedi"]
+    },
+    {
+        "nom": "Seetickets",
+        "url": "https://www.seetickets.com/fr/search?q=roland+garros",
+        "type": "revendeur_officiel",
+        "priorité": 3,
+        "selectors": {
+            "liste_events": ".search-results, .events-list",
+            "date_items": ".event-date, .date",
+            "prix": ".price, .amount",
+            "disponibilite": ".status, .availability"
+        }
+    },
+    {
+        "nom": "Eventim",
+        "url": "https://www.eventim.fr/search/?affiliate=FES&searchterm=roland+garros",
+        "type": "revendeur_officiel",
+        "priorité": 3,
+        "selectors": {
+            "liste_events": ".eventlist, .search-results",
+            "date_items": ".date, .event-date",
+            "prix": ".price, .amount",
+            "disponibilite": ".availability, .status"
+        }
+    }
 ]
+# Pour la rétrocompatibilité, on conserve la variable SITES originale
 SITES = SITES_AMELIORES
 
-DATE_CIBLE = "31 mai 2025"
-JOUR_SEMAINE_CIBLE = "samedi"
+DATE_CIBLE = "31 mai 2025"  # La date qui vous intéresse
+JOUR_SEMAINE_CIBLE = "samedi"  # Le jour de la semaine correspondant au 31 mai 2025
 
+# Configuration des vérifications
 MOTS_CLES = [
-    "31 mai", "disponible", "billetterie", "vente", "nouvelle vente",
+    "31 mai", "disponible", "billetterie", "vente", "nouvelle vente", 
     "samedi 31", "31/05", "31/05/2025", "dernier jour", "phase finale",
     "places", "billets disponibles", "court", "tribune", "acheter"
 ]
@@ -179,14 +224,27 @@ MOTS_CLES_REVENTE = [
     "billet disponible", "ticket disponible", "disponibilités"
 ]
 
+# Créer une session HTTP réutilisable avec retry
 def creer_session():
-    """Crée une session HTTP simple."""
-    return requests.Session()
+    """Crée une session HTTP avec paramètres de retry."""
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=MAX_RETRIES,
+        backoff_factor=RETRY_BACKOFF_FACTOR,
+        status_forcelist=RETRY_STATUS_FORCELIST,
+        allowed_methods=["GET", "HEAD", "OPTIONS"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
 def obtenir_user_agent():
+    """Renvoie un User-Agent aléatoire."""
     return random.choice(USER_AGENTS)
 
 def envoyer_email(sujet, message):
+    """Envoie un email de notification."""
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD or not EMAIL_RECIPIENT:
         logger.warning("Configuration email incomplète, notification non envoyée")
         return False
@@ -202,13 +260,26 @@ def envoyer_email(sujet, message):
             msg['From'] = EMAIL_ADDRESS
             msg['To'] = EMAIL_RECIPIENT
             serveur.send_message(msg)
-        logger.info(f"Email envoyé: {sujet}")
+        logger.info(f"Email envoyé avec succès: {sujet}")
         return True
+    except socket.gaierror as e:
+        logger.error(f"Erreur de résolution DNS: {e}")
+        return False
+    except ssl.SSLError as e:
+        logger.error(f"Erreur SSL: {e}")
+        return False
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"Erreur d'authentification SMTP: {e}")
+        return False
+    except smtplib.SMTPException as e:
+        logger.error(f"Erreur SMTP: {e}")
+        return False
     except Exception as e:
-        logger.error(f"Erreur envoi email: {e}")
+        logger.error(f"Erreur inattendue lors de l'envoi de l'email: {e}")
         return False
 
 def envoyer_alerte_telegram(message):
+    """Envoie une notification via Telegram."""
     if not UTILISER_TELEGRAM or not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         logger.warning("Configuration Telegram incomplète, alerte non envoyée")
         return False
@@ -217,50 +288,63 @@ def envoyer_alerte_telegram(message):
             try:
                 bot = telebot.TeleBot(TELEGRAM_TOKEN)
                 bot.send_message(TELEGRAM_CHAT_ID, message, parse_mode='Markdown')
-                logger.info("Notification Telegram envoyée")
+                logger.info("Notification Telegram envoyée avec succès")
                 return True
             except telebot.apihelper.ApiTelegramException as e:
                 if "429" in str(e) and tentative < MAX_RETRIES - 1:
                     attente = (tentative + 1) * 5
-                    logger.warning(f"Rate limit Telegram, nouvel essai dans {attente} s")
+                    logger.warning(f"Rate limit Telegram, nouvel essai dans {attente} secondes...")
                     time.sleep(attente)
                 else:
                     raise
+            except Exception as e:
+                raise
+    except telebot.apihelper.ApiTelegramException as e:
+        logger.error(f"Erreur API Telegram: {e}")
+        return False
     except Exception as e:
-        logger.error(f"Erreur envoi Telegram: {e}")
+        logger.error(f"Erreur lors de l'envoi de la notification Telegram: {e}")
         return False
 
 def configurer_bot_telegram():
+    """Renvoie les instructions de configuration du bot Telegram."""
     instructions = f"""
 === CONFIGURATION DU BOT TELEGRAM ===
+
 1. Ouvrez Telegram et recherchez BotFather (@BotFather)
-2. Envoyez /newbot et suivez les instructions pour créer un bot
-3. Remplacez le TOKEN et le CHAT_ID dans ce script
-4. Redémarrez le bot.
-Le bot surveille Roland-Garros pour le {DATE_CIBLE}.
+2. Envoyez la commande /newbot et suivez les instructions pour créer un nouveau bot
+3. Copiez le TOKEN fourni et remplacez "votre_token_bot_telegram" dans ce script
+4. Envoyez un message au bot pour obtenir votre CHAT_ID via https://api.telegram.org/bot<VOTRE_TOKEN>/getUpdates
+5. Remplacez "votre_chat_id" dans ce script par le CHAT_ID obtenu
+
+Le bot surveille Roland-Garros pour le {DATE_CIBLE} et vous alertera dès qu'une disponibilité est détectée.
 """
     logger.info("Instructions Telegram générées")
     return instructions
 
 def analyser_json_pour_disponibilite(json_data):
+    """
+    Analyse un objet JSON pour y trouver des indices de disponibilité pour le 31 mai.
+    Retourne un tuple (score, liste de mots-clés trouvés).
+    """
     score = 0
     mots_trouves = []
     def explorer_json(obj, chemin=""):
         nonlocal score, mots_trouves
         if isinstance(obj, dict):
-            date_trouvee = False
+            date_cible_trouvee = False
             dispo_trouvee = False
             for key, value in obj.items():
                 key_lower = str(key).lower()
                 if 'date' in key_lower or 'jour' in key_lower or 'day' in key_lower:
                     if '31/05' in str(value).lower() or '31-05' in str(value).lower() or '31 mai' in str(value).lower() or '2025-05-31' in str(value).lower():
-                        date_trouvee = True
+                        date_cible_trouvee = True
                         mots_trouves.append(f"date 31 mai trouvée dans JSON à {chemin}.{key}")
                 elif any(term in key_lower for term in ['disponible', 'available', 'status', 'bookable', 'stock']):
                     if str(value).lower() in ['true', '1', 'yes', 'disponible', 'available', 'en stock', 'in stock']:
                         dispo_trouvee = True
                         mots_trouves.append(f"disponibilité trouvée dans JSON à {chemin}.{key}")
-            if date_trouvee and dispo_trouvee:
+            if date_cible_trouvee and dispo_trouvee:
                 score += 5
                 mots_trouves.append("date 31 mai ET disponibilité trouvées dans le même objet JSON")
             for k, v in obj.items():
@@ -271,10 +355,14 @@ def analyser_json_pour_disponibilite(json_data):
     explorer_json(json_data)
     return score, mots_trouves
 
+# ***************** Modification majeure *****************
+# Suppression totale de Selenium.
+# La fonction verifier_site_ameliore utilise uniquement cloudscraper.
 def verifier_site_ameliore(site_info):
     """
-    Vérification d'un site en utilisant cloudscraper exclusivement.
-    Si le site possède une protection anti-bot spécifique, celle-ci sera ignorée dans cette version.
+    Vérifie un site en utilisant cloudscraper exclusivement.
+    Cette version remplace l'ancienne logique Selenium.
+    Retourne un tuple (disponible, message).
     """
     try:
         logger.info(f"Vérification de {site_info['nom']} via Cloudscraper")
@@ -304,7 +392,7 @@ def verifier_site_ameliore(site_info):
             'session': f'session_{random.randint(10000,99999)}',
             'language': 'fr'
         }
-        logger.info(f"Accès à {site_info['url']}")
+        logger.info(f"Accès à {site_info['url']} via Cloudscraper")
         response = scraper.get(site_info['url'], headers=headers, cookies=cookies, timeout=30)
         if response.status_code != 200:
             logger.warning(f"Erreur HTTP {response.status_code} sur {site_info['nom']}")
@@ -314,10 +402,12 @@ def verifier_site_ameliore(site_info):
         contenu_page = soup.get_text().lower()
         mots_trouves = []
         score = 0
-        if any(df in contenu_page for df in ["31 mai", "31/05/2025", "31/05", "samedi 31"]):
+        # Vérifier la présence de la date cible
+        if any(date_format in contenu_page for date_format in ["31 mai", "31/05/2025", "31/05", "samedi 31"]):
             mots_trouves.append("date du 31 mai trouvée dans la page")
             score += 5
         selectors = site_info.get('selectors', {})
+        # Vérifier calendrier
         if 'calendrier' in selectors:
             for cal in soup.select(selectors['calendrier']):
                 if '31' in cal.get_text().lower() and ('mai' in cal.get_text().lower() or '05' in cal.get_text().lower()):
@@ -327,6 +417,7 @@ def verifier_site_ameliore(site_info):
                     if any('available' in c or 'bookable' in c or 'in-stock' in c for c in classes):
                         score += 3
                         mots_trouves.append("jour 31 mai marqué comme disponible")
+        # Vérifier éléments de date
         if 'date_items' in selectors:
             for date_elem in soup.select(selectors['date_items']):
                 if '31' in date_elem.get_text().lower() and ('mai' in date_elem.get_text().lower() or '05' in date_elem.get_text().lower()):
@@ -336,6 +427,7 @@ def verifier_site_ameliore(site_info):
                     if parent and any(term in str(parent).lower() for term in ['disponible', 'available', 'acheter', 'buy']):
                         score += 3
                         mots_trouves.append("date 31 mai associée à une disponibilité")
+        # Vérifier boutons d'achat
         if 'achat_buttons' in selectors:
             for bouton in soup.select(selectors['achat_buttons']):
                 if any(term in bouton.get_text().lower() for term in ['acheter', 'réserver', 'buy', 'book']):
@@ -345,6 +437,7 @@ def verifier_site_ameliore(site_info):
                     if parent and ('31 mai' in parent.get_text().lower() or '31/05' in parent.get_text().lower()):
                         score += 4
                         mots_trouves.append("bouton d'achat pour le 31 mai")
+        # Vérifier indicateurs de disponibilité
         if 'disponibilite' in selectors:
             for disp in soup.select(selectors['disponibilite']):
                 if any(term in disp.get_text().lower() for term in ['disponible', 'available', 'en stock']):
@@ -352,10 +445,12 @@ def verifier_site_ameliore(site_info):
                     if parent and ('31 mai' in parent.get_text().lower() or '31/05' in parent.get_text().lower()):
                         score += 5
                         mots_trouves.append("disponibilité explicite pour le 31 mai")
+        # Mots-clés additionnels
         for mot in site_info.get('mots_cles_additionnels', []):
             if mot.lower() in contenu_page:
                 mots_trouves.append(f"mot-clé '{mot}' trouvé")
                 score += 1
+        # Vérifier API associée si définie
         if 'api_url' in site_info:
             try:
                 api_headers = headers.copy()
@@ -368,13 +463,15 @@ def verifier_site_ameliore(site_info):
                         score += json_score
                         mots_trouves.extend(json_mots)
                     except Exception as e:
-                        logger.warning(f"Erreur d'analyse JSON API: {e}")
+                        logger.warning(f"Erreur lors de l'analyse des données API: {e}")
             except Exception as e:
-                logger.warning(f"Erreur accès API: {e}")
+                logger.warning(f"Erreur lors de l'accès à l'API: {e}")
         # Recherche dans les scripts intégrés
         for script in soup.find_all('script'):
-            if script.string:
-                for json_str in re.findall(r'({[^{]*?"date.*?})', script.string):
+            script_content = script.string if script.string else ''
+            if script_content:
+                json_matches = re.findall(r'({[^{]*?"date.*?})', script_content)
+                for json_str in json_matches:
                     try:
                         json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+):', r'\1"\2":', json_str)
                         json_data = json.loads(json_str)
@@ -387,6 +484,7 @@ def verifier_site_ameliore(site_info):
                                             mots_trouves.append("données JSON indiquant disponibilité pour le 31 mai")
                     except Exception:
                         pass
+        # Recherche XPath avec lxml
         try:
             xpath_dispo = "//div[contains(text(), '31 mai') or contains(text(), '31/05')]//*[contains(@class, 'available') or contains(@class, 'dispo')]"
             elems = lxml_tree.xpath(xpath_dispo)
@@ -399,21 +497,31 @@ def verifier_site_ameliore(site_info):
                 score += 3
                 mots_trouves.append(f"{len(boutons)} boutons d'achat trouvés par XPath")
         except Exception as e:
-            logger.warning(f"Erreur XPath: {e}")
+            logger.warning(f"Erreur lors de l'analyse XPath: {e}")
+        # Définir le seuil de détection
         seuil_detection = 5
         if site_info['type'] == 'officiel':
             seuil_detection = 6
         elif site_info['type'] == 'revente':
             seuil_detection = 4
         if score >= seuil_detection:
-            return True, f"Disponibilité détectée sur {site_info['nom']} (score: {score}/10) - {', '.join(mots_trouves)}"
+            details = ", ".join(mots_trouves)
+            return True, f"Disponibilité détectée sur {site_info['nom']} (score: {score}/10) - Éléments trouvés: {details}"
         else:
             return False, f"Aucune disponibilité détectée sur {site_info['nom']} (score: {score}/10)"
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Erreur de requête sur {site_info['nom']}: {e}")
+        return False, f"Erreur de connexion à {site_info['nom']}: {e}"
     except Exception as e:
-        logger.error(f"Erreur lors de la vérification de {site_info['nom']}: {e}")
+        logger.error(f"Erreur non gérée lors de la vérification de {site_info['nom']}: {e}")
         return False, f"Erreur lors de la vérification de {site_info['nom']}: {str(e)}"
 
+# Fonction pour vérifier tous les sites en parallèle
 def verifier_sites_en_parallele(sites, max_workers=5):
+    """
+    Vérifie plusieurs sites en parallèle pour améliorer la performance.
+    Retourne une liste de résultats.
+    """
     resultats = []
     sites_par_priorite = {}
     for site in sites:
@@ -472,9 +580,14 @@ def verifier_sites_en_parallele(sites, max_workers=5):
             time.sleep(random.uniform(2, 5))
     return resultats
 
+# Fonction pour vérifier les requêtes XHR potentielles du site Roland-Garros
 def verifier_requests_xhr_roland_garros():
+    """
+    Tente de simuler les requêtes XHR faites par le site officiel de Roland-Garros.
+    Retourne un tuple (disponible, message).
+    """
     try:
-        logger.info("Vérification des requêtes XHR du site Roland-Garros")
+        logger.info("Tentative de vérification des requêtes XHR de Roland-Garros")
         urls = [
             "https://www.rolandgarros.com/fr-fr/ajax/calendrier?date=2025-05-31",
             "https://www.rolandgarros.com/fr-fr/billetterie/load-dates",
@@ -484,8 +597,8 @@ def verifier_requests_xhr_roland_garros():
         cookies = {
             'visited': 'true',
             'language': 'fr-fr',
-            'session_id': f'session_{random.randint(1000000,9999999)}',
-            'visitor_id': f'visitor_{random.randint(1000000,9999999)}'
+            'session_id': f'session_{random.randint(1000000, 9999999)}',
+            'visitor_id': f'visitor_{random.randint(1000000, 9999999)}'
         }
         headers = {
             'User-Agent': obtenir_user_agent(),
@@ -521,7 +634,7 @@ def verifier_requests_xhr_roland_garros():
                     except ValueError:
                         if '31 mai' in resp.text and any(term in resp.text.lower() for term in ['disponible', 'available']):
                             return True, f"Indices de disponibilité via GET XHR: {url}"
-                time.sleep(random.uniform(1,3))
+                time.sleep(random.uniform(1, 3))
                 for payload in data_potentielles:
                     try:
                         logger.info(f"Requête POST sur {url}")
@@ -537,7 +650,7 @@ def verifier_requests_xhr_roland_garros():
                                 pass
                     except requests.exceptions.RequestException:
                         continue
-                    time.sleep(random.uniform(1,3))
+                    time.sleep(random.uniform(1, 3))
             except requests.exceptions.RequestException:
                 continue
         return False, "Aucune info XHR détectée"
@@ -546,24 +659,38 @@ def verifier_requests_xhr_roland_garros():
         return False, f"Erreur XHR: {e}"
 
 def verifier_twitter():
+    """
+    Vérifie les tweets récents mentionnant Roland-Garros et les billets pour le 31 mai.
+    Retourne (disponible, message).
+    """
     try:
         url = "https://nitter.net/search?f=tweets&q=roland+garros+billets+31+mai"
         headers = {'User-Agent': obtenir_user_agent()}
         session = creer_session()
-        resp = session.get(url, headers=headers, timeout=30)
+        try:
+            resp = session.get(url, headers=headers, timeout=30)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Erreur de requête sur Twitter: {e}")
+            return False, f"Erreur de connexion à Twitter: {e}"
         if resp.status_code != 200:
-            return False, f"Erreur Twitter: {resp.status_code}"
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        tweets = soup.select('.timeline-item')
+            logger.warning(f"Erreur HTTP {resp.status_code} sur Twitter")
+            return False, f"Erreur accès Twitter: {resp.status_code}"
+        try:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+        except Exception as e:
+            logger.error(f"Erreur parsing Twitter: {e}")
+            return False, f"Erreur analyse Twitter: {e}"
+        tweets_recents = soup.select('.timeline-item')
         tweets_pertinents = []
-        for tweet in tweets[:10]:
+        for tweet in tweets_recents[:10]:
             try:
                 texte = tweet.get_text().lower()
                 date_tweet = tweet.select_one('.tweet-date')
                 if date_tweet and "h" in date_tweet.get_text():
                     if any(mot in texte for mot in MOTS_CLES + MOTS_CLES_REVENTE) and "31 mai" in texte:
                         tweets_pertinents.append(texte)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Erreur analyse tweet: {e}")
                 continue
         if tweets_pertinents:
             return True, f"{len(tweets_pertinents)} tweets pertinents trouvés"
@@ -573,7 +700,10 @@ def verifier_twitter():
         return False, f"Erreur Twitter: {e}"
 
 def verifier_tous_les_sites():
-    logger.info("Début vérification de tous les sites")
+    """
+    Vérifie tous les sites configurés et retourne les résultats.
+    """
+    logger.info("Démarrage de la vérification de tous les sites")
     sites_tries = sorted(SITES_AMELIORES, key=lambda x: x.get('priorité', 999))
     resultats = verifier_sites_en_parallele(sites_tries)
     try:
@@ -645,35 +775,52 @@ def verifier_tous_les_sites():
             logger.info(f"Recherche Twitter: {msg_tw}")
         except Exception as e:
             logger.error(f"Erreur recherche Twitter: {e}")
+            resultats.append({
+                "source": "Recherche Twitter",
+                "disponible": False,
+                "message": f"Erreur: {e}",
+                "url": "https://twitter.com/search?q=roland%20garros%20billets%2031%20mai&src=typed_query&f=live",
+                "timestamp": datetime.now().isoformat()
+            })
     return resultats
 
 def envoyer_notifications(sujet, message, alertes=None):
-    email_ok = envoyer_email(sujet, message) if EMAIL_ADDRESS and EMAIL_PASSWORD else False
-    if UTILISER_TELEGRAM and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
-        telegram_msg = f"*{sujet}*\n\n"
-        if alertes:
-            telegram_msg += "Détails des alertes:\n"
-            for idx, alerte in enumerate(alertes, 1):
-                telegram_msg += f"{idx}. *{alerte['source']}*\n   {alerte['message']}\n   [Voir ici]({alerte['url']})\n\n"
-        else:
-            telegram_msg += re.sub(r'\s+', ' ', message)
-        telegram_msg += "\n\nContactez le service client au +33 1 47 43 48 00 si nécessaire."
-        telegram_ok = envoyer_alerte_telegram(telegram_msg)
+    """Envoie des notifications par email et Telegram."""
+    if EMAIL_ADDRESS and EMAIL_PASSWORD:
+        email_ok = envoyer_email(sujet, message)
     else:
-        telegram_ok = False
-    return email_ok or telegram_ok
+        email_ok = False
+        logger.warning("Configuration email manquante, notification non envoyée")
+    if UTILISER_TELEGRAM and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
+        telegram_message = f"*{sujet}*\n\n"
+        if alertes:
+            telegram_message += "Détails des alertes:\n"
+            for idx, alerte in enumerate(alertes, 1):
+                telegram_message += f"{idx}. *{alerte['source']}*\n   {alerte['message']}\n   [Voir ici]({alerte['url']})\n\n"
+        else:
+            clean_message = re.sub(r'\s+', ' ', message)
+            telegram_message += clean_message
+        telegram_message += f"\n\nContactez directement le service client au +33 1 47 43 48 00 si nécessaire."
+        telegram_ok = envoyer_alerte_telegram(telegram_message)
+        success = email_ok or telegram_ok
+    else:
+        logger.warning("Configuration Telegram manquante, notification Telegram non envoyée")
+        success = email_ok
+    return success
 
 def envoyer_stats_vers_webapp():
+    """Envoie les statistiques de vérification vers la webapp."""
     try:
         data = {
             "derniere_verification": datetime.now().isoformat(),
-            "resultats": resultats  # Assurez-vous que 'resultats' est défini dans le scope
+            "resultats": resultats  # Veillez à ce que 'resultats' soit défini dans le scope
         }
         requests.post("https://rg2025bot.onrender.com/api/update", json=data)
     except Exception as e:
         logger.error(f"Erreur d'envoi des stats: {e}")
 
 def programme_principal():
+    """Fonction principale qui effectue périodiquement les vérifications."""
     logger.info(f"Bot démarré - Surveillance des billets pour Roland-Garros le {DATE_CIBLE}")
     compteur_verifications = 0
     derniere_alerte = None
@@ -688,7 +835,6 @@ def programme_principal():
             maintenant = datetime.now()
             compteur_verifications += 1
             logger.info(f"Vérification #{compteur_verifications} - {maintenant.strftime('%d/%m/%Y %H:%M:%S')}")
-            # Sauvegarde de l'état
             try:
                 with open('logs/last_state.json', 'w') as f:
                     etat = {
@@ -708,7 +854,7 @@ def programme_principal():
                 t_debut = datetime.now()
                 resultats = verifier_tous_les_sites()
                 t_fin = datetime.now()
-                logger.info(f"Vérification terminée en {(t_fin - t_debut).total_seconds():.2f} s")
+                logger.info(f"Vérification terminée en {(t_fin - t_debut).total_seconds():.2f} secondes")
                 for r in resultats:
                     if r["disponible"]:
                         alertes.append({
@@ -717,7 +863,7 @@ def programme_principal():
                             "url": r["url"]
                         })
             except Exception as e:
-                logger.error(f"Erreur vérification sites: {e}")
+                logger.error(f"Erreur lors de la vérification des sites: {e}")
                 time.sleep(INTERVALLE_RETRY)
                 continue
             if alertes:
@@ -743,10 +889,11 @@ Détails des alertes:
    URL: {alerte['url']}
 """
                     contenu_email += f"""
-Veuillez vérifier rapidement ces sites.
+Veuillez vérifier rapidement ces sites pour confirmer et effectuer votre achat.
+
 Détection: {maintenant.strftime('%d/%m/%Y %H:%M:%S')}
 
-Ce message est envoyé automatiquement.
+Ce message a été envoyé automatiquement par votre bot de surveillance.
 """
                     if derniere_alerte is None or (maintenant - derniere_alerte).total_seconds() > 14400:
                         if envoyer_notifications(sujet, contenu_email, alertes_nouvelles):
@@ -759,12 +906,9 @@ Ce message est envoyé automatiquement.
                             except Exception as e:
                                 logger.warning(f"Erreur enregistrement alerte: {e}")
                         else:
-                            logger.error("Échec envoi notifications")
+                            logger.error("Échec de l'envoi des notifications")
                     else:
                         logger.info("Alerte déjà envoyée récemment")
-            # Envoi des stats vers la webapp
-            envoyer_stats_vers_webapp()
-            # Sauvegarde des statistiques
             try:
                 with open('logs/statistiques.json', 'w') as f:
                     stats = {
@@ -777,18 +921,18 @@ Ce message est envoyé automatiquement.
                     }
                     json.dump(stats, f)
             except Exception as e:
-                logger.warning(f"Erreur enregistrement statistiques: {e}")
-            # Purge des logs si trop volumineux (5MB max, garder 1000 dernières lignes)
+                logger.warning(f"Impossible d'enregistrer les statistiques: {e}")
+            # Purge du fichier de log si trop volumineux (5 MB max, garder les 1000 dernières lignes)
             try:
                 log_file = "bot_roland_garros.log"
                 if os.path.exists(log_file) and os.path.getsize(log_file) > 5 * 1024 * 1024:
                     logger.info("Purge du fichier de log")
                     with open(log_file, 'r') as f:
-                        lignes = f.readlines()
+                        lines = f.readlines()
                     with open(log_file, 'w') as f:
-                        f.writelines(lignes[-1000:])
+                        f.writelines(lines[-1000:])
             except Exception as e:
-                logger.warning(f"Erreur purge log: {e}")
+                logger.warning(f"Erreur lors de la purge du log: {e}")
             prochaine_verif = maintenant + timedelta(seconds=intervalle_verification)
             logger.info(f"Prochaine vérification: {prochaine_verif.strftime('%H:%M:%S')} (intervalle de {intervalle_verification} s)")
             time.sleep(intervalle_verification)
@@ -796,13 +940,13 @@ Ce message est envoyé automatiquement.
             logger.info("Bot arrêté manuellement")
             break
         except Exception as e:
-            logger.error(f"Erreur dans la boucle principale: {e}")
+            logger.error(f"Erreur inattendue dans la boucle principale: {e}")
             time.sleep(INTERVALLE_RETRY)
 
 if __name__ == "__main__":
     try:
         if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID or TELEGRAM_CHAT_ID == "votre_chat_id":
-            logger.error("Configuration Telegram incomplète. Veuillez configurer TELEGRAM_TOKEN et TELEGRAM_CHAT_ID.")
+            logger.error("ERREUR: Configuration Telegram incomplète. Veuillez configurer TELEGRAM_TOKEN et TELEGRAM_CHAT_ID")
             print("=== CONFIGURATION INCOMPLÈTE ===")
             print(f"Token actuel: {TELEGRAM_TOKEN}")
             print(f"Chat ID actuel: {TELEGRAM_CHAT_ID}")
@@ -814,15 +958,15 @@ if __name__ == "__main__":
         logger.info(f"Nombre de sites surveillés: {len(SITES_AMELIORES)}")
         logger.info(f"Notifications Telegram: {'Activées' if UTILISER_TELEGRAM else 'Désactivées'}")
         logger.info(f"Notifications Email: {'Activées' if EMAIL_ADDRESS and EMAIL_PASSWORD else 'Désactivées'}")
-        # Vérifier l'accès aux sites
-        logger.info("Vérification d'accès aux sites...")
+        # Vérification de l'accès aux sites
+        logger.info("Vérification de l'accès aux sites...")
         sites_inaccessibles = []
         session_test = creer_session()
         for site in SITES_AMELIORES:
             try:
-                resp_test = session_test.get(site["url"], timeout=10, headers={'User-Agent': obtenir_user_agent()})
-                if resp_test.status_code != 200:
-                    sites_inaccessibles.append((site["nom"], resp_test.status_code))
+                test_resp = session_test.get(site["url"], timeout=10, headers={'User-Agent': obtenir_user_agent()})
+                if test_resp.status_code != 200:
+                    sites_inaccessibles.append((site["nom"], test_resp.status_code))
             except Exception as e:
                 sites_inaccessibles.append((site["nom"], str(e)))
         if sites_inaccessibles:
@@ -830,8 +974,25 @@ if __name__ == "__main__":
             for nom, err in sites_inaccessibles:
                 logger.warning(f"  - {nom}: {err}")
             envoyer_notifications("Démarrage Bot Roland-Garros avec avertissement",
-                                    f"Les sites inaccessibles: {', '.join(nom for nom, _ in sites_inaccessibles)}")
-        logger.info("Démarrage de la surveillance...")
-        programme_principal()
+                                    f"Sites inaccessibles: {', '.join(nom for nom, _ in sites_inaccessibles)}")
+        else:
+            logger.info("Tous les sites sont accessibles.")
+        # Envoi d'un message de test
+        test_ok = envoyer_notifications(
+            "Test - Bot Roland-Garros Démarré",
+            f"Le bot de surveillance pour Roland-Garros le {DATE_CIBLE} a démarré avec succès. Vous recevrez des alertes ici."
+        )
+        if test_ok:
+            logger.info("Test de notification réussi, démarrage de la surveillance...")
+            programme_principal()
+        else:
+            logger.error("Échec du test de notification, vérifiez votre configuration Telegram.")
+            print("ERREUR: Le test de notification a échoué. Vérifiez votre configuration Telegram.")
+    except KeyboardInterrupt:
+        logger.info("Bot arrêté manuellement")
     except Exception as e:
-        logger.error(f"Erreur lors du démarrage: {e}")
+        logger.error(f"Erreur inattendue: {e}")
+        try:
+            envoyer_notifications("ERREUR - Bot Roland-Garros", f"Le bot s'est arrêté en raison de: {e}")
+        except:
+            logger.error("Impossible d'envoyer la notification d'erreur")

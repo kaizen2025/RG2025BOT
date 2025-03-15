@@ -178,6 +178,14 @@ roland_garros_bot.programme_principal = programme_principal_wrapper
 @app.route('/')
 def index():
     return render_template('index.html', date_cible=roland_garros_bot.DATE_CIBLE)
+@app.route('/api/update', methods=['POST'])
+def update_status():
+    data = request.json
+    # Sauvegarder les données dans app.stats
+    app.stats.update(data)
+    with open('logs/stats.json', 'w') as f:
+        json.dump(app.stats, f)
+    return jsonify({"success": True})
 
 @app.route('/api/stats')
 def get_stats():

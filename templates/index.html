@@ -723,6 +723,82 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- NEW: Proxy and Auto-Reservation Settings -->
+                <div class="row mb-4">
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-header bg-primary text-white">
+                        <i class="fas fa-globe me-2"></i> Configuration Proxy
+                      </div>
+                      <div class="card-body">
+                        <div class="mb-3">
+                          <label for="proxy-service" class="form-label">Service de proxy</label>
+                          <select class="form-select" id="proxy-service">
+                            <option value="none">Aucun</option>
+                            <option value="brightdata">BrightData</option>
+                            <option value="smartproxy">SmartProxy</option>
+                            <option value="file">Fichier de proxies</option>
+                          </select>
+                        </div>
+                        <div id="proxy-details" class="d-none">
+                          <div class="mb-3">
+                            <label for="proxy-username" class="form-label">Nom d'utilisateur</label>
+                            <input type="text" class="form-control" id="proxy-username">
+                          </div>
+                          <div class="mb-3">
+                            <label for="proxy-password" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="proxy-password">
+                          </div>
+                          <div class="mb-3">
+                            <label for="proxy-host" class="form-label">Hôte</label>
+                            <input type="text" class="form-control" id="proxy-host">
+                          </div>
+                          <div class="mb-3">
+                            <label for="proxy-port" class="form-label">Port</label>
+                            <input type="text" class="form-control" id="proxy-port">
+                          </div>
+                          <div class="mb-3">
+                            <label for="proxy-country" class="form-label">Pays</label>
+                            <input type="text" class="form-control" id="proxy-country" value="fr">
+                          </div>
+                        </div>
+                        <button id="save-proxy" class="btn btn-primary">Enregistrer</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-header bg-primary text-white">
+                        <i class="fas fa-shopping-cart me-2"></i> Réservation automatique
+                      </div>
+                      <div class="card-body">
+                        <div class="mb-3">
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable-auto-reservation">
+                            <label class="form-check-label" for="enable-auto-reservation">Activer la réservation automatique</label>
+                          </div>
+                        </div>
+                        <div id="reservation-details" class="d-none">
+                          <div class="mb-3">
+                            <label for="reservation-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="reservation-email">
+                          </div>
+                          <div class="mb-3">
+                            <label for="reservation-password" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="reservation-password">
+                          </div>
+                          <div class="mb-3">
+                            <label for="reservation-max-price" class="form-label">Prix maximum (€)</label>
+                            <input type="number" class="form-control" id="reservation-max-price" value="1000">
+                          </div>
+                        </div>
+                        <button id="save-reservation" class="btn btn-primary">Enregistrer</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -803,6 +879,21 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- NEW: Modal for screenshots -->
+    <div class="modal fade" id="screenshotModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Capture d'écran</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <img id="screenshot-img" src="" class="img-fluid" alt="Capture d'écran">
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Container pour les notifications toast -->
@@ -1154,6 +1245,10 @@
                                             <div>
                                                 <a href="${alerte.url}" target="_blank" class="btn btn-sm btn-danger">Voir les billets</a>
                                                 <button class="btn btn-sm btn-outline-secondary dismiss-alert" data-source="${alerte.source}">Ignorer</button>
+                                                ${alerte.screenshots && alerte.screenshots.length > 0 ? 
+                                                  `<button class="btn btn-sm btn-info view-screenshot" data-screenshot="${alerte.screenshots[0].data}">
+                                                    <i class="fas fa-camera"></i> Voir capture
+                                                   </button>` : ''}
                                             </div>
                                         </div>
                                         <span class="timestamp">${alerte.date || ''} ${alerte.timestamp}</span>
@@ -1181,6 +1276,16 @@
                             // Logique pour ignorer une alerte (à implémenter)
                             this.closest('.alert-card').remove();
                             showToast('Alerte ignorée', `L'alerte pour ${source} a été ignorée`, 'info');
+                        });
+                    });
+                    
+                    // NEW: Activer les gestionnaires d'événements pour les boutons de capture d'écran
+                    document.querySelectorAll('.view-screenshot').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const screenshotData = this.getAttribute('data-screenshot');
+                            document.getElementById('screenshot-img').src = `data:image/png;base64,${screenshotData}`;
+                            const modal = new bootstrap.Modal(document.getElementById('screenshotModal'));
+                            modal.show();
                         });
                     });
                     
@@ -1394,6 +1499,68 @@
                     document.getElementById('alerts-count').textContent = '0';
                     showToast('Alertes', 'Toutes les alertes ont été effacées', 'info');
                 }
+            });
+
+            // NEW: Proxy configuration
+            document.getElementById('proxy-service').addEventListener('change', function() {
+                if (this.value === 'none') {
+                    document.getElementById('proxy-details').classList.add('d-none');
+                } else {
+                    document.getElementById('proxy-details').classList.remove('d-none');
+                }
+            });
+
+            document.getElementById('save-proxy').addEventListener('click', function() {
+                const service = document.getElementById('proxy-service').value;
+                const username = document.getElementById('proxy-username').value;
+                const password = document.getElementById('proxy-password').value;
+                const host = document.getElementById('proxy-host').value;
+                const port = document.getElementById('proxy-port').value;
+                const country = document.getElementById('proxy-country').value;
+                
+                fetch('/api/proxy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        service, username, password, host, port, country
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showToast('Proxy', 'Configuration proxy mise à jour', 'success');
+                });
+            });
+
+            // NEW: Auto-reservation settings
+            document.getElementById('enable-auto-reservation').addEventListener('change', function() {
+                if (this.checked) {
+                    document.getElementById('reservation-details').classList.remove('d-none');
+                } else {
+                    document.getElementById('reservation-details').classList.add('d-none');
+                }
+            });
+
+            document.getElementById('save-reservation').addEventListener('click', function() {
+                const enabled = document.getElementById('enable-auto-reservation').checked;
+                const email = document.getElementById('reservation-email').value;
+                const password = document.getElementById('reservation-password').value;
+                const maxPrice = document.getElementById('reservation-max-price').value;
+                
+                fetch('/api/auto-reservation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        enabled, email, password, max_price: maxPrice
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showToast('Réservation', 'Configuration de réservation mise à jour', 'success');
+                });
             });
         });
     </script>

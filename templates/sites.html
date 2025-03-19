@@ -1,0 +1,1242 @@
+{% extends "base.html" %}
+
+{% block title %}Monitored Sites - Pokemon Stock Monitor{% endblock %}
+
+{% block styles %}
+<style>
+    .sites-header {
+        background: linear-gradient(135deg, var(--pokemon-primary) 0%, #667eea 100%);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .sites-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/static/images/pattern.png');
+        opacity: 0.1;
+        z-index: 0;
+    }
+    
+    .sites-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .sites-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        color: var(--pokemon-secondary);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .site-card {
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+        overflow: hidden;
+        height: 100%;
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: none;
+    }
+    
+    .site-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .site-header {
+        position: relative;
+        background-size: cover;
+        background-position: center;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    
+    .site-logo {
+        max-width: 120px;
+        max-height: 60px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    }
+    
+    .site-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(0deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 50%);
+    }
+    
+    .site-type-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        z-index: 1;
+    }
+    
+    .site-official {
+        background-color: rgba(13, 110, 253, 0.9);
+        color: white;
+    }
+    
+    .site-official_reseller {
+        background-color: rgba(25, 135, 84, 0.9);
+        color: white;
+    }
+    
+    .site-retailer {
+        background-color: rgba(255, 193, 7, 0.9);
+        color: #212529;
+    }
+    
+    .site-marketplace {
+        background-color: rgba(108, 117, 125, 0.9);
+        color: white;
+    }
+    
+    .site-country-flag {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        width: 30px;
+        height: 20px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+    }
+    
+    .site-details {
+        padding: 20px;
+    }
+    
+    .site-name {
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .site-url {
+        font-size: 0.85rem;
+        color: #6c757d;
+        word-break: break-all;
+        margin-bottom: 15px;
+    }
+    
+    .site-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: var(--pokemon-primary);
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .site-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    
+    .status-online {
+        background-color: #198754;
+    }
+    
+    .status-warning {
+        background-color: #ffc107;
+    }
+    
+    .status-offline {
+        background-color: #dc3545;
+    }
+    
+    .status-text {
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .site-last-check {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 15px;
+    }
+    
+    .filter-section {
+        background-color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
+    
+    .product-list-item {
+        padding: 10px 15px;
+        margin-bottom: 5px;
+        border-radius: 10px;
+        background-color: #f8f9fa;
+        transition: background-color 0.2s;
+    }
+    
+    .product-list-item:hover {
+        background-color: #e9ecef;
+    }
+    
+    .product-list-item.in-stock {
+        border-left: 3px solid #198754;
+    }
+    
+    .product-list-item.out-of-stock {
+        border-left: 3px solid #dc3545;
+    }
+    
+    .site-performance-chart {
+        margin-top: 20px;
+        height: 200px;
+    }
+    
+    /* Dark theme adjustments */
+    body.dark-theme .site-card,
+    body.dark-theme .filter-section,
+    body.dark-theme .empty-state {
+        background-color: #1e1e1e;
+    }
+    
+    body.dark-theme .product-list-item {
+        background-color: #2d2d2d;
+    }
+    
+    body.dark-theme .product-list-item:hover {
+        background-color: #3d3d3d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">Monitored Sites</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Monitored Sites</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSiteModal">
+                <i class="fas fa-plus me-1"></i> Add Site
+            </button>
+            <button class="btn btn-outline-primary ms-2" id="refreshSites">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="sites-header">
+    <div class="sites-header-content">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="sites-icon">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <h2>Monitored E-commerce Sites</h2>
+                <p class="mb-0">Track product availability across multiple retailers and get notified when Pokemon cards are back in stock.</p>
+            </div>
+            <div class="col-md-6 text-md-end mt-4 mt-md-0">
+                <div class="d-flex flex-column flex-md-row justify-content-md-end">
+                    <div class="me-md-4 mb-3 mb-md-0">
+                        <div class="text-white-50">Total Sites</div>
+                        <div class="fs-2 fw-bold" id="totalSites">0</div>
+                    </div>
+                    <div class="me-md-4 mb-3 mb-md-0">
+                        <div class="text-white-50">Total Products</div>
+                        <div class="fs-2 fw-bold" id="totalProducts">0</div>
+                    </div>
+                    <div>
+                        <div class="text-white-50">In Stock Products</div>
+                        <div class="fs-2 fw-bold" id="inStockProducts">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-3 mb-2">
+            <select class="form-select" id="filterSiteType">
+                <option value="all">All site types</option>
+                <option value="official">Official sites</option>
+                <option value="official_reseller">Official resellers</option>
+                <option value="retailer">Retailers</option>
+                <option value="marketplace">Marketplaces</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-2">
+            <select class="form-select" id="filterCountry">
+                <option value="all">All countries</option>
+                <option value="France">France</option>
+                <option value="Italie">Italy</option>
+                <option value="Espagne">Spain</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-2">
+            <input type="text" class="form-control" id="searchSite" placeholder="Search sites...">
+        </div>
+        <div class="col-md-2 mb-2">
+            <button id="applyFilters" class="btn btn-primary w-100">
+                <i class="fas fa-filter me-1"></i> Apply
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Sites Grid -->
+<div class="row" id="sitesContainer">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Add Site Modal -->
+<div class="modal fade" id="addSiteModal" tabindex="-1" aria-labelledby="addSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addSiteModalLabel">Add New Site</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addSiteForm">
+                    <div class="mb-3">
+                        <label for="siteName" class="form-label">Site Name</label>
+                        <input type="text" class="form-control" id="siteName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="siteUrl" class="form-label">Site URL</label>
+                        <input type="url" class="form-control" id="siteUrl" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="siteType" class="form-label">Site Type</label>
+                        <select class="form-select" id="siteType" required>
+                            <option value="">Select a type</option>
+                            <option value="official">Official site</option>
+                            <option value="official_reseller">Official reseller</option>
+                            <option value="retailer">Retailer</option>
+                            <option value="marketplace">Marketplace</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="siteCountry" class="form-label">Country</label>
+                        <select class="form-select" id="siteCountry" required>
+                            <option value="">Select a country</option>
+                            <option value="France">France</option>
+                            <option value="Italie">Italy</option>
+                            <option value="Espagne">Spain</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sitePriority" class="form-label">Priority (1-5, 1 being highest)</label>
+                        <input type="number" class="form-control" id="sitePriority" min="1" max="5" value="2" required>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="antiBot">
+                        <label class="form-check-label" for="antiBot">
+                            Has Anti-Bot Protection
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveSiteButton">Add Site</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Site Detail Modal -->
+<div class="modal fade" id="siteDetailModal" tabindex="-1" aria-labelledby="siteDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="siteDetailModalLabel">Site Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <h4 id="siteDetailName">Site Name</h4>
+                        <div class="site-url" id="siteDetailUrl">https://example.com</div>
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge me-2" id="siteDetailTypeBadge">Official</span>
+                            <img src="" alt="Country Flag" id="siteDetailFlag" width="24" height="16" class="me-2">
+                            <span id="siteDetailCountry">Country</span>
+                        </div>
+                        <div class="site-status">
+                            <span class="status-indicator status-online" id="siteDetailStatusIndicator"></span>
+                            <span class="status-text" id="siteDetailStatusText">Online</span>
+                        </div>
+                        <div class="site-last-check" id="siteDetailLastCheck">Last checked: 10 minutes ago</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-primary" id="siteDetailVisitButton" target="_blank">
+                                <i class="fas fa-external-link-alt me-1"></i> Visit Site
+                            </a>
+                            <button class="btn btn-outline-primary" id="siteDetailCheckButton">
+                                <i class="fas fa-sync-alt me-1"></i> Check Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h5>Monitoring Statistics</h5>
+                        <div class="site-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="siteDetailProductCount">0</div>
+                                <div class="stat-label">Products</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="siteDetailInStockCount">0</div>
+                                <div class="stat-label">In Stock</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="siteDetailCheckCount">0</div>
+                                <div class="stat-label">Checks</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="siteDetailSuccessRate">0%</div>
+                                <div class="stat-label">Success Rate</div>
+                            </div>
+                        </div>
+                        
+                        <div class="site-performance-chart">
+                            <canvas id="sitePerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h5>Products</h5>
+                        <div id="siteDetailProducts">
+                            <div class="text-center py-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="editSiteButton">
+                    <i class="fas fa-edit me-1"></i> Edit Site
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Circuit Breaker Status Modal -->
+<div class="modal fade" id="circuitBreakerModal" tabindex="-1" aria-labelledby="circuitBreakerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="circuitBreakerModalLabel">Circuit Breaker Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Circuit breakers help prevent site blocking by temporarily stopping requests after multiple failures.</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Site/Product</th>
+                                <th>State</th>
+                                <th>Failures</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="circuitBreakerTable">
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" id="resetAllCircuitBreakers">
+                    <i class="fas fa-redo me-1"></i> Reset All
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Global variables
+    let sitesData = [];
+    let filteredSites = [];
+    let currentFilters = {
+        type: 'all',
+        country: 'all',
+        search: ''
+    };
+    
+    // Charts
+    let sitePerformanceChart;
+    
+    // DOM Elements
+    const sitesContainer = document.getElementById('sitesContainer');
+    const totalSitesElement = document.getElementById('totalSites');
+    const totalProductsElement = document.getElementById('totalProducts');
+    const inStockProductsElement = document.getElementById('inStockProducts');
+    const refreshSitesButton = document.getElementById('refreshSites');
+    const filterSiteTypeSelect = document.getElementById('filterSiteType');
+    const filterCountrySelect = document.getElementById('filterCountry');
+    const searchSiteInput = document.getElementById('searchSite');
+    const applyFiltersButton = document.getElementById('applyFilters');
+    
+    // Fetch sites data
+    function fetchSitesData() {
+        Promise.all([
+            fetch('/api/sites').then(response => response.json()),
+            fetch('/api/stats').then(response => response.json())
+        ])
+        .then(([sites, stats]) => {
+            sitesData = sites;
+            
+            // Combine with stats data
+            sitesData.forEach(site => {
+                site.products = [];
+                site.inStockCount = 0;
+                site.lastCheck = null;
+                site.status = "unknown";
+                
+                // Find products for this site and count in-stock items
+                if (stats.results) {
+                    Object.values(stats.results).forEach(result => {
+                        if (result.site_name === site.name) {
+                            // Add product to site's product list
+                            site.products.push({
+                                name: result.product_name,
+                                collection: result.collection,
+                                available: result.available,
+                                price: result.product_data?.price || 'N/A',
+                                url: result.url,
+                                timestamp: result.timestamp,
+                                date: result.date
+                            });
+                            
+                            // Update in-stock count
+                            if (result.available) {
+                                site.inStockCount++;
+                            }
+                            
+                            // Update last check time if newer
+                            const checkTime = new Date(`${result.date} ${result.timestamp}`);
+                            if (!site.lastCheck || checkTime > new Date(site.lastCheck)) {
+                                site.lastCheck = `${result.date} ${result.timestamp}`;
+                            }
+                            
+                            // Update site status
+                            if (site.status === "unknown") {
+                                site.status = "online";
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // Count totals
+            const totalProducts = sitesData.reduce((sum, site) => sum + site.products.length, 0);
+            const inStockProducts = sitesData.reduce((sum, site) => sum + site.inStockCount, 0);
+            
+            // Update counters
+            totalSitesElement.textContent = sitesData.length;
+            totalProductsElement.textContent = totalProducts;
+            inStockProductsElement.textContent = inStockProducts;
+            
+            // Apply filters
+            applyFilters();
+        })
+        .catch(error => {
+            console.error('Error fetching sites data:', error);
+            showToast('Error', 'Failed to load sites data. Please try again.', 'danger');
+        });
+    }
+    
+    // Apply filters to sites
+    function applyFilters() {
+        filteredSites = sitesData.filter(site => {
+            // Type filter
+            if (currentFilters.type !== 'all' && site.type !== currentFilters.type) {
+                return false;
+            }
+            
+            // Country filter
+            if (currentFilters.country !== 'all' && site.country !== currentFilters.country) {
+                return false;
+            }
+            
+            // Search filter
+            if (currentFilters.search && 
+                !site.name.toLowerCase().includes(currentFilters.search.toLowerCase()) && 
+                !site.base_url.toLowerCase().includes(currentFilters.search.toLowerCase())) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        renderSites();
+    }
+    
+    // Render sites
+    function renderSites() {
+        if (filteredSites.length === 0) {
+            sitesContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h4>No sites found</h4>
+                        <p class="text-muted">Try adjusting your filters to see more sites.</p>
+                        <button class="btn btn-primary" id="resetFilters">
+                            <i class="fas fa-undo me-1"></i> Reset Filters
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listener to reset filters button
+            const resetFiltersBtn = document.getElementById('resetFilters');
+            if (resetFiltersBtn) {
+                resetFiltersBtn.addEventListener('click', resetFilters);
+            }
+            
+            return;
+        }
+        
+        let html = '';
+        
+        filteredSites.forEach(site => {
+            const typeBadgeClass = site.type === 'official' ? 'site-official' : 
+                                  site.type === 'official_reseller' ? 'site-official_reseller' : 
+                                  site.type === 'marketplace' ? 'site-marketplace' : 'site-retailer';
+                                  
+            const typeBadgeText = site.type === 'official' ? 'Official' : 
+                                 site.type === 'official_reseller' ? 'Official Reseller' : 
+                                 site.type === 'marketplace' ? 'Marketplace' : 'Retailer';
+                                 
+            const countryFlag = getCountryFlagUrl(site.country);
+            
+            // Determine site header background
+            const headerBackground = getSiteHeaderBackground(site.name);
+            
+            // Determine site logo
+            const siteLogo = getSiteLogoUrl(site.name);
+            
+            // Determine site status
+            const statusClass = site.status === 'online' ? 'status-online' : 
+                              site.status === 'warning' ? 'status-warning' : 'status-offline';
+                              
+            const statusText = site.status === 'online' ? 'Online' : 
+                             site.status === 'warning' ? 'Warning' : 'Offline';
+            
+            html += `
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="site-card">
+                        <div class="site-header" style="background-image: url('${headerBackground}')">
+                            <div class="site-overlay"></div>
+                            <img src="${siteLogo}" alt="${site.name}" class="site-logo">
+                            <div class="site-type-badge ${typeBadgeClass}">${typeBadgeText}</div>
+                            <img src="${countryFlag}" alt="${site.country}" class="site-country-flag">
+                        </div>
+                        <div class="site-details">
+                            <h5 class="site-name">${site.name}</h5>
+                            <div class="site-url">${site.base_url}</div>
+                            
+                            <div class="site-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">${site.product_count || site.products.length}</div>
+                                    <div class="stat-label">Products</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${site.inStockCount}</div>
+                                    <div class="stat-label">In Stock</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${site.priority}</div>
+                                    <div class="stat-label">Priority</div>
+                                </div>
+                            </div>
+                            
+                            <div class="site-status">
+                                <span class="status-indicator ${statusClass}"></span>
+                                <span class="status-text">${statusText}</span>
+                            </div>
+                            
+                            <div class="site-last-check">
+                                Last checked: ${site.lastCheck ? formatDate(site.lastCheck) : 'Never'}
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary view-site-btn" data-site-name="${site.name}">
+                                    <i class="fas fa-eye me-1"></i> View Details
+                                </button>
+                                <div class="btn-group">
+                                    <a href="${site.base_url}" target="_blank" class="btn btn-outline-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Visit
+                                    </a>
+                                    <button class="btn btn-outline-primary check-site-btn" data-site-name="${site.name}">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary circuit-breaker-btn" data-site-name="${site.name}">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        sitesContainer.innerHTML = html;
+        
+        // Add event listeners
+        document.querySelectorAll('.view-site-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const siteName = this.getAttribute('data-site-name');
+                openSiteDetailModal(siteName);
+            });
+        });
+        
+        document.querySelectorAll('.check-site-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const siteName = this.getAttribute('data-site-name');
+                checkSiteNow(siteName);
+            });
+        });
+        
+        document.querySelectorAll('.circuit-breaker-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const siteName = this.getAttribute('data-site-name');
+                openCircuitBreakerModal(siteName);
+            });
+        });
+    }
+    
+    // Reset filters
+    function resetFilters() {
+        currentFilters = {
+            type: 'all',
+            country: 'all',
+            search: ''
+        };
+        
+        // Reset form fields
+        filterSiteTypeSelect.value = 'all';
+        filterCountrySelect.value = 'all';
+        searchSiteInput.value = '';
+        
+        // Apply filters
+        applyFilters();
+        
+        showToast('Filters Reset', 'All filters have been reset to default values.', 'info');
+    }
+    
+    // Format date
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        
+        const now = new Date();
+        const date = new Date(dateString.replace(' ', 'T'));
+        
+        // If date is invalid, return original string
+        if (isNaN(date.getTime())) return dateString;
+        
+        const diffMs = now - date;
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        
+        if (diffMin < 1) {
+            return 'Just now';
+        } else if (diffMin < 60) {
+            return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+        } else if (diffHour < 24) {
+            return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+        } else {
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+    }
+    
+    // Get country flag URL
+    function getCountryFlagUrl(country) {
+        switch (country.toLowerCase()) {
+            case 'france':
+                return 'https://flagcdn.com/w40/fr.png';
+            case 'italie':
+            case 'italy':
+                return 'https://flagcdn.com/w40/it.png';
+            case 'espagne':
+            case 'spain':
+                return 'https://flagcdn.com/w40/es.png';
+            default:
+                return 'https://flagcdn.com/w40/eu.png';
+        }
+    }
+    
+    // Get site header background
+    function getSiteHeaderBackground(siteName) {
+        // In a real implementation, you would have actual background images for each site
+        // For this template, we'll use a placeholder
+        return 'https://via.placeholder.com/800x300/3B5BA7/FFFFFF?text=';
+    }
+    
+    // Get site logo URL
+    function getSiteLogoUrl(siteName) {
+        const site = siteName.toLowerCase();
+        
+        if (site.includes('amazon')) {
+            return 'https://logo.clearbit.com/amazon.com';
+        } else if (site.includes('fnac')) {
+            return 'https://logo.clearbit.com/fnac.com';
+        } else if (site.includes('cultura')) {
+            return 'https://logo.clearbit.com/cultura.com';
+        } else if (site.includes('carrefour')) {
+            return 'https://logo.clearbit.com/carrefour.fr';
+        } else if (site.includes('joueclub')) {
+            return 'https://logo.clearbit.com/joueclub.fr';
+        } else if (site.includes('king')) {
+            return 'https://logo.clearbit.com/king-jouet.com';
+        }
+        
+        return 'https://via.placeholder.com/200x100?text=' + encodeURIComponent(siteName);
+    }
+    
+    // Open site detail modal
+    function openSiteDetailModal(siteName) {
+        const site = sitesData.find(s => s.name === siteName);
+        
+        if (!site) {
+            showToast('Error', 'Site not found.', 'danger');
+            return;
+        }
+        
+        // Update modal content
+        document.getElementById('siteDetailModalLabel').textContent = site.name;
+        document.getElementById('siteDetailName').textContent = site.name;
+        document.getElementById('siteDetailUrl').textContent = site.base_url;
+        document.getElementById('siteDetailVisitButton').href = site.base_url;
+        
+        // Set type badge
+        const typeBadge = document.getElementById('siteDetailTypeBadge');
+        typeBadge.textContent = site.type === 'official' ? 'Official' : 
+                               site.type === 'official_reseller' ? 'Official Reseller' : 
+                               site.type === 'marketplace' ? 'Marketplace' : 'Retailer';
+                               
+        typeBadge.className = 'badge me-2 ' + 
+                             (site.type === 'official' ? 'bg-primary' : 
+                             site.type === 'official_reseller' ? 'bg-success' : 
+                             site.type === 'marketplace' ? 'bg-secondary' : 'bg-warning text-dark');
+        
+        // Set country flag
+        document.getElementById('siteDetailFlag').src = getCountryFlagUrl(site.country);
+        document.getElementById('siteDetailCountry').textContent = site.country;
+        
+        // Set status
+        const statusIndicator = document.getElementById('siteDetailStatusIndicator');
+        const statusText = document.getElementById('siteDetailStatusText');
+        
+        statusIndicator.className = 'status-indicator ' + 
+                                  (site.status === 'online' ? 'status-online' : 
+                                  site.status === 'warning' ? 'status-warning' : 'status-offline');
+                                  
+        statusText.textContent = site.status === 'online' ? 'Online' : 
+                               site.status === 'warning' ? 'Warning' : 'Offline';
+        
+        // Set last check
+        document.getElementById('siteDetailLastCheck').textContent = 'Last checked: ' + (site.lastCheck ? formatDate(site.lastCheck) : 'Never');
+        
+        // Set stats
+        document.getElementById('siteDetailProductCount').textContent = site.product_count || site.products.length;
+        document.getElementById('siteDetailInStockCount').textContent = site.inStockCount;
+        document.getElementById('siteDetailCheckCount').textContent = '42'; // Mock data
+        document.getElementById('siteDetailSuccessRate').textContent = '95%'; // Mock data
+        
+        // Initialize performance chart
+        initSitePerformanceChart();
+        
+        // Populate products list
+        const productsContainer = document.getElementById('siteDetailProducts');
+        
+        if (!site.products || site.products.length === 0) {
+            productsContainer.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No products being monitored for this site.</p>
+                </div>
+            `;
+        } else {
+            let productsHtml = '';
+            
+            site.products.forEach(product => {
+                const statusClass = product.available ? 'in-stock' : 'out-of-stock';
+                const statusBadgeClass = product.available ? 'bg-success' : 'bg-danger';
+                const statusText = product.available ? 'In Stock' : 'Out of Stock';
+                
+                productsHtml += `
+                    <div class="product-list-item ${statusClass}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">${product.name}</div>
+                                <div class="small text-muted">${product.collection} • ${product.price}€</div>
+                            </div>
+                            <div>
+                                <span class="badge ${statusBadgeClass}">${statusText}</span>
+                                <a href="${product.url}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            productsContainer.innerHTML = productsHtml;
+        }
+        
+        // Handle check now button
+        document.getElementById('siteDetailCheckButton').onclick = function() {
+            checkSiteNow(siteName);
+        };
+        
+        // Handle edit button
+        document.getElementById('editSiteButton').onclick = function() {
+            // In a real implementation, this would open an edit form
+            showToast('Edit Site', 'Edit functionality would be implemented here.', 'info');
+        };
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('siteDetailModal'));
+        modal.show();
+    }
+    
+    // Initialize site performance chart
+    function initSitePerformanceChart() {
+        const ctx = document.getElementById('sitePerformanceChart').getContext('2d');
+        
+        // Sample data for demonstration
+        const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const successData = [95, 92, 98, 96, 95, 94, 97];
+        const inStockData = [2, 0, 1, 3, 2, 0, 1];
+        
+        if (sitePerformanceChart) {
+            sitePerformanceChart.destroy();
+        }
+        
+        sitePerformanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Success Rate (%)',
+                    data: successData,
+                    backgroundColor: 'rgba(59, 91, 167, 0.2)',
+                    borderColor: 'rgba(59, 91, 167, 1)',
+                    borderWidth: 2,
+                    yAxisID: 'y',
+                    tension: 0.3
+                }, {
+                    label: 'Products In Stock',
+                    data: inStockData,
+                    backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                    borderColor: 'rgba(25, 135, 84, 1)',
+                    borderWidth: 2,
+                    yAxisID: 'y1',
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        min: 80,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Success Rate (%)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        min: 0,
+                        max: 5,
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Products In Stock'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Check site now
+    function checkSiteNow(siteName) {
+        const checkButton = document.querySelector(`.check-site-btn[data-site-name="${siteName}"]`);
+        
+        if (checkButton) {
+            checkButton.disabled = true;
+            checkButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+        
+        const detailCheckButton = document.getElementById('siteDetailCheckButton');
+        if (detailCheckButton) {
+            detailCheckButton.disabled = true;
+            detailCheckButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Checking...';
+        }
+        
+        // In a real implementation, this would call an API endpoint to check the site
+        setTimeout(() => {
+            // Simulate successful check
+            showToast('Site Checked', `${siteName} has been checked successfully.`, 'success');
+            
+            // Re-enable buttons
+            if (checkButton) {
+                checkButton.disabled = false;
+                checkButton.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }
+            
+            if (detailCheckButton) {
+                detailCheckButton.disabled = false;
+                detailCheckButton.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Check Now';
+            }
+            
+            // Refresh data
+            fetchSitesData();
+        }, 2000);
+    }
+    
+    // Open circuit breaker modal
+    function openCircuitBreakerModal(siteName = null) {
+        // Fetch circuit breakers
+        fetch('/api/circuit-breakers')
+            .then(response => response.json())
+            .then(data => {
+                const table = document.getElementById('circuitBreakerTable');
+                
+                if (Object.keys(data).length === 0) {
+                    table.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center">No circuit breakers active.</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                Object.entries(data).forEach(([name, details]) => {
+                    // If specific site is provided, filter to only show that site's circuit breakers
+                    if (siteName && !name.includes(siteName)) {
+                        return;
+                    }
+                    
+                    const stateClass = details.state === 'CLOSED' ? 'success' : 
+                                     details.state === 'HALF-OPEN' ? 'warning' : 'danger';
+                    
+                    html += `
+                        <tr>
+                            <td>${name}</td>
+                            <td><span class="badge bg-${stateClass}">${details.state}</span></td>
+                            <td>${details.failure_count}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary reset-circuit-btn" data-circuit="${name}">
+                                    <i class="fas fa-redo"></i> Reset
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                table.innerHTML = html;
+                
+                // Add event listeners to reset buttons
+                document.querySelectorAll('.reset-circuit-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const circuit = this.getAttribute('data-circuit');
+                        resetCircuitBreaker(circuit);
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching circuit breakers:', error);
+                document.getElementById('circuitBreakerTable').innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger">Error loading circuit breakers.</td>
+                    </tr>
+                `;
+            });
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('circuitBreakerModal'));
+        modal.show();
+    }
+    
+    // Reset circuit breaker
+    function resetCircuitBreaker(circuitName) {
+        // In a real implementation, this would call an API endpoint to reset the circuit breaker
+        showToast('Circuit Breaker', `Circuit breaker for ${circuitName} has been reset.`, 'success');
+        
+        // Refresh circuit breaker data
+        openCircuitBreakerModal();
+    }
+    
+    // Reset all circuit breakers
+    document.getElementById('resetAllCircuitBreakers').addEventListener('click', function() {
+        // In a real implementation, this would call an API endpoint to reset all circuit breakers
+        showToast('Circuit Breakers', 'All circuit breakers have been reset.', 'success');
+        
+        // Refresh circuit breaker data
+        openCircuitBreakerModal();
+    });
+    
+    // Event: Add site
+    document.getElementById('saveSiteButton').addEventListener('click', function() {
+        const siteName = document.getElementById('siteName').value;
+        const siteUrl = document.getElementById('siteUrl').value;
+        const siteType = document.getElementById('siteType').value;
+        const siteCountry = document.getElementById('siteCountry').value;
+        const sitePriority = document.getElementById('sitePriority').value;
+        const antiBot = document.getElementById('antiBot').checked;
+        
+        if (!siteName || !siteUrl || !siteType || !siteCountry) {
+            showToast('Error', 'Please fill all required fields.', 'danger');
+            return;
+        }
+        
+        // In a real implementation, this would call an API endpoint to add the site
+        showToast('Site Added', `Site ${siteName} has been added successfully.`, 'success');
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addSiteModal'));
+        modal.hide();
+        
+        // Refresh data
+        fetchSitesData();
+    });
+    
+    // Event: Refresh sites
+    refreshSitesButton.addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing...';
+        
+        fetchSitesData();
+        
+        setTimeout(() => {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh';
+            showToast('Sites Refreshed', 'Site data has been updated.', 'success');
+        }, 1000);
+    });
+    
+    // Event: Apply filters
+    applyFiltersButton.addEventListener('click', function() {
+        currentFilters.type = filterSiteTypeSelect.value;
+        currentFilters.country = filterCountrySelect.value;
+        currentFilters.search = searchSiteInput.value;
+        
+        applyFilters();
+    });
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch sites data
+        fetchSitesData();
+    });
+</script>
+{% endblock %}

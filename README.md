@@ -171,4 +171,4 @@ Ce projet est distribué sous licence MIT. Voir le fichier `LICENSE` pour plus d
 
 ---
 
-Développé par [Votre Nom]
+Développé par [KAIZEN2025 KB]

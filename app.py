@@ -9,6 +9,7 @@ import time
 import sqlite3
 from werkzeug.security import generate_password_hash
 from functools import wraps
+from threading import Thread
 
 # Import modules
 from auth import auth_bp, get_user_by_id, get_user_preferences, login_required, admin_required, init_db
@@ -274,6 +275,119 @@ def main_program_wrapper():
         # Wait before next check
         time.sleep(check_interval)
 
+# Add function for simplified bot (for Render)
+def simplified_bot():
+    """Simplified version of the bot for Render environment that checks less frequently."""
+    stats["total_checks"] = 0
+    
+    while True:
+        try:
+            now = datetime.now()
+            stats["total_checks"] += 1
+            stats["last_check"] = now.strftime("%d/%m/%Y %H:%M:%S")
+            
+            # Execute a check
+            logging.info(f"[RENDER] Check #{stats['total_checks']} - {now.strftime('%d/%m/%Y %H:%M:%S')}")
+            
+            # List to collect all positive alerts
+            alerts = []
+            
+            # Check highest priority sites only (to save resources on Render)
+            high_priority_sites = [site for site in pokemon_scraper.SITES if site.get('priority', 0) >= 2]
+            sites_to_check = high_priority_sites if high_priority_sites else pokemon_scraper.SITES[:2]
+            
+            for site in sites_to_check:
+                try:
+                    logging.info(f"[RENDER] Checking site: {site['name']}")
+                    # Only check a subset of products on Render to save resources
+                    products_to_check = site['products'][:3] if len(site['products']) > 3 else site['products']
+                    
+                    for product in products_to_check:
+                        available, message, screenshots, product_data = pokemon_scraper.check_site_product(site, product)
+                        if available:
+                            alerts.append({
+                                "source": site["name"],
+                                "product_name": product["name"],
+                                "collection": product["collection"],
+                                "message": message,
+                                "url": product["url"],
+                                "screenshots": screenshots,
+                                "product_data": product_data
+                            })
+                            logging.info(f"[RENDER] DETECTION on {site['name']} for {product['name']}: {message}")
+                        else:
+                            logging.info(f"[RENDER] {site['name']} for {product['name']}: {message}")
+                        
+                        # Longer pause between products on Render
+                        time.sleep(5)
+                    
+                    # Longer pause between sites on Render
+                    time.sleep(10)
+                except Exception as e:
+                    logging.error(f"[RENDER] Error checking {site['name']}: {e}")
+            
+            # Handle alerts (same as in main program)
+            if alerts:
+                subject = f"ALERT - Pokemon cards in stock!"
+                email_content = """
+                Hello,
+                
+                Stock availability has been detected for Pokemon collections.
+                
+                Alert details:
+                """
+                
+                for idx, alert in enumerate(alerts, 1):
+                    email_content += f"""
+                {idx}. {alert['source']} - {alert['product_name']}
+                   {alert['message']}
+                   URL: {alert['url']}
+                """
+                
+                email_content += """
+                Please check these sites quickly to confirm and make your purchase.
+                
+                This message was automatically sent by your monitoring bot.
+                """
+                
+                notification_ok = pokemon_scraper.send_notifications(subject, email_content, alerts)
+                if notification_ok:
+                    stats["last_alert"] = now.strftime("%d/%m/%Y %H:%M:%S")
+                    logging.info(f"[RENDER] ALERTS SENT - {len(alerts)} detections")
+                else:
+                    logging.error("[RENDER] Failed to send notifications")
+            
+            # Set next check time (longer interval for Render)
+            next_check_time = now.timestamp() + 1800  # 30 minutes
+            stats["next_check"] = datetime.fromtimestamp(next_check_time).strftime("%d/%m/%Y %H:%M:%S")
+            logging.info(f"[RENDER] Next check: {stats['next_check']}")
+            
+            # Save stats to JSON file
+            try:
+                with open('logs/stats.json', 'w') as f:
+                    save_stats = stats.copy()
+                    for key, result in save_stats["results"].items():
+                        if "screenshots" in result:
+                            save_stats["results"][key]["screenshots"] = [
+                                {"caption": ss.get("caption", "Screenshot")} for ss in result["screenshots"]
+                            ]
+                    
+                    for alert in save_stats["active_alerts"]:
+                        if "screenshots" in alert:
+                            alert["screenshots"] = [
+                                {"caption": ss.get("caption", "Screenshot")} for ss in alert["screenshots"]
+                            ]
+                    
+                    json.dump(save_stats, f)
+            except Exception as e:
+                logging.error(f"[RENDER] Error saving stats: {e}")
+            
+            # Wait longer between checks on Render
+            time.sleep(1800)  # 30 minutes
+        except Exception as e:
+            logging.error(f"[RENDER] Bot error: {e}")
+            time.sleep(300)  # Wait 5 minutes in case of error
+
 # Replace main function
 pokemon_scraper.main_program = main_program_wrapper
 
@@ -497,7 +611,9 @@ def save_user_notification():
     conn.close()
     
     return jsonify({"status": "success", "message": "Notification preference saved"})
-
+@app.route('/ping')
+def ping():
+    return 'pong'
 @app.route('/api/user/notifications/<int:notification_id>', methods=['DELETE'])
 @login_required
 def delete_user_notification(notification_id):
@@ -532,10 +648,26 @@ def run_bot():
     pokemon_scraper.main_program()
 
 if __name__ == "__main__":
-    # Start the bot in a separate thread
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.daemon = True
-    bot_thread.start()
+    # En environnement de production (comme Render), utilisez le port fourni par l'environnement
+    port = int(os.environ.get("PORT", 5000))
     
-    # Run Flask application
-    run_app()
+    # Initialiser la base de données
+    init_db()
+    
+    # Sur Render, démarrez le bot dans un thread uniquement si on n'est pas en période de suspension
+    if os.environ.get('RENDER', 'False').lower() == 'true':
+        bot_thread = Thread(target=simplified_bot)
+        bot_thread.daemon = True
+        bot_thread.start()
+        logging.info("Started simplified bot for Render environment")
+    else:
+        # Pour le développement local, démarrer normalement
+        bot_thread = Thread(target=run_bot)
+        bot_thread.daemon = True
+        bot_thread.start()
+        logging.info("Started regular bot for local environment")
+    
+    # Démarrer l'application Flask
+    # Debug mode should be off in production
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 't')
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

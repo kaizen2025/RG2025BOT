@@ -1,13 +1,40 @@
-requests==2.31.0
-beautifulsoup4==4.12.3
-pyTelegramBotAPI==4.16.1
-python-dotenv==1.0.1
+# Application web
 flask==2.2.3
-werkzeug==2.2.3  # Specify version to fix url_quote import error
+flask-bcrypt==1.0.1
+werkzeug==2.2.3
+python-dotenv==1.0.0
 gunicorn==20.1.0
-selenium==4.10.0
-chromedriver-autoinstaller==0.6.3  # Replaced webdriver-manager
-cloudscraper==1.2.71
-lxml==4.9.3
-pyautogui==0.9.54  # For mouse simulation
-Pillow==10.2.0  # For screenshot handling
+
+# Scraping et navigation web
+requests==2.28.2
+beautifulsoup4==4.11.2
+lxml==4.9.2
+selenium==4.8.2
+cloudscraper==1.2.69
+chromedriver-autoinstaller==0.4.0
+webdriver-manager==3.8.5
+html5lib==1.1
+urllib3==1.26.15
+
+# Analyse de données
+pandas==1.5.3
+numpy==1.24.2
+matplotlib==3.7.1
+pillow==9.4.0
+
+# Gestion des notifications
+telebot==0.0.5
+python-telegram-bot==13.15
+pyTelegramBotAPI==4.10.0
+
+# Utilitaires
+python-dateutil==2.8.2
+schedule==1.1.0
+pytz==2022.7.1
+tqdm==4.65.0
+validators==0.20.0
+
+# Sécurité et performances
+retry==0.9.2
+ratelimit==2.2.1
+proxy-requests==0.5.2

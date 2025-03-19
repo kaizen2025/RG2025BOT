@@ -9,11 +9,15 @@ services:
         value: 3.9.0
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        value: sqlite:///database.db
+      - key: RENDER
+        value: true
       - key: FLASK_DEBUG
-        value: False
+        value: false
       - key: INTERVALLE_MIN
-        value: 540
+        value: 1800
       - key: INTERVALLE_MAX
-        value: 660
+        value: 3600
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/google-chrome-stable
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true

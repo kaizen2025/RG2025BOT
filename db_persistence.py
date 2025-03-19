@@ -1,3 +1,4 @@
+# db_persistence.py - Version corrigée
 import os
 import subprocess
 import time
@@ -8,9 +9,10 @@ import requests
 import base64
 import hashlib
 from datetime import datetime
+import json
 
 # Configuration
-GITHUB_REPO = "votre-nom/db-storage"  # Format: username/repo
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "kaizen2025/database")  # Format: username/repo
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}/contents"
 DB_PATH = "database.db"
@@ -79,7 +81,12 @@ def get_file_from_github():
 
 def upload_file_to_github():
     """Pousse la base de données vers GitHub"""
-    if not GITHUB_TOKEN or not os.path.exists(DB_PATH):
+    if not GITHUB_TOKEN:
+        logger.error("GITHUB_TOKEN non configuré")
+        return False
+    
+    if not os.path.exists(DB_PATH):
+        logger.error(f"Le fichier {DB_PATH} n'existe pas")
         return False
     
     headers = {
@@ -136,43 +143,74 @@ def verify_db_integrity():
         tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         conn.close()
         
-        if len(tables) > 0:
+        table_names = [table[0] for table in tables]
+        
+        if 'users' in table_names and 'user_notifications' in table_names:
             logger.info(f"Base de données vérifiée: {len(tables)} tables trouvées")
             return True
         else:
-            logger.warning("Base de données vide ou corrompue")
+            logger.warning(f"Base de données incomplète. Tables trouvées: {table_names}")
             return False
     except sqlite3.Error as e:
         logger.error(f"Erreur lors de la vérification de la base de données: {e}")
+        return False
+
+def create_db_schema():
+    """Crée le schéma de la base de données si nécessaire"""
+    try:
+        logger.info("Initialisation du schéma de la base de données...")
+        from auth import init_db
+        init_db()
+        logger.info("Schéma de la base de données créé avec succès.")
+        return True
+    except Exception as e:
+        logger.error(f"Erreur lors de la création du schéma: {e}")
         return False
 
 def run_db_persistence():
     """Fonction principale de persistance de la base de données"""
     logger.info("Démarrage du service de persistance de la base de données")
     
-    # Au démarrage, récupérer la DB depuis GitHub
+    # 1. Au démarrage, récupérer la DB depuis GitHub
     db_downloaded = get_file_from_github()
     
-    # Vérifier l'intégrité
-    if db_downloaded and not verify_db_integrity():
-        logger.warning("Base de données téléchargée corrompue, restauration de la sauvegarde...")
-        if os.path.exists(f"{DB_PATH}.backup"):
-            shutil.copy2(f"{DB_PATH}.backup", DB_PATH)
+    # 2. Vérifier l'intégrité - si problème, créer la base de données
+    db_valid = False
+    if db_downloaded:
+        db_valid = verify_db_integrity()
     
-    # Si aucune DB valide n'est disponible, on laisse l'application en créer une nouvelle
+    # 3. Si pas téléchargée ou invalide, initialiser la BD
+    if not db_valid:
+        logger.warning("Base de données inexistante ou invalide, création du schéma...")
+        if create_db_schema():
+            # Envoyer immédiatement la base données nouvellement créée
+            upload_file_to_github()
+        else:
+            logger.error("Échec de l'initialisation de la base de données")
     
+    # 4. Vérifier si une sauvegarde est disponible en cas d'échec
+    if not db_valid and os.path.exists(f"{DB_PATH}.backup"):
+        logger.warning("Restauration depuis la sauvegarde locale...")
+        shutil.copy2(f"{DB_PATH}.backup", DB_PATH)
+        if verify_db_integrity():
+            logger.info("Restauration depuis la sauvegarde réussie.")
+            upload_file_to_github()
+    
+    # Boucle de surveillance et sauvegarde
     last_upload_time = time.time()
     last_db_hash = calculate_file_hash(DB_PATH)
     
-    # Boucle de surveillance et sauvegarde
     while True:
         try:
             current_time = time.time()
             current_hash = calculate_file_hash(DB_PATH)
             
             # Vérifier si la DB a été modifiée et si l'intervalle de temps est écoulé
-            if (current_hash != last_db_hash or current_time - last_upload_time > BACKUP_INTERVAL) and verify_db_integrity():
-                logger.info("Modifications détectées, sauvegarde en cours...")
+            time_elapsed = current_time - last_upload_time > BACKUP_INTERVAL
+            hash_changed = current_hash != last_db_hash
+            
+            if (hash_changed or time_elapsed) and verify_db_integrity():
+                logger.info("Modifications détectées ou délai écoulé, sauvegarde en cours...")
                 if upload_file_to_github():
                     last_upload_time = current_time
                     last_db_hash = current_hash

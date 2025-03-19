@@ -1,0 +1,623 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Pokemon Stock Monitor{% endblock %}
+
+{% block styles %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, var(--pokemon-primary) 0%, #667eea 100%);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/static/images/pattern.png');
+        opacity: 0.1;
+        z-index: 0;
+    }
+    
+    .profile-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        padding: 4px;
+        margin-bottom: 15px;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .profile-avatar i {
+        font-size: 50px;
+        color: var(--pokemon-primary);
+    }
+    
+    .profile-name {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .profile-role {
+        display: inline-block;
+        padding: 5px 15px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+    }
+    
+    .profile-meta {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .meta-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .meta-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    .meta-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+    
+    .profile-card {
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+        border: none;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .profile-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header-tabs {
+        margin: -0.5rem -1.25rem;
+    }
+    
+    .nav-link {
+        color: #6c757d;
+        font-weight: 500;
+        padding: 1rem 1.5rem;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+    }
+    
+    .nav-link:hover {
+        color: var(--pokemon-primary);
+    }
+    
+    .nav-link.active {
+        color: var(--pokemon-primary);
+        border-bottom-color: var(--pokemon-primary);
+        background-color: transparent;
+    }
+    
+    .form-label {
+        font-weight: 500;
+    }
+    
+    .notification-item {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.2s;
+        border-left: 4px solid var(--pokemon-primary);
+    }
+    
+    .notification-item:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        transform: translateY(-3px);
+    }
+    
+    .notification-actions {
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    
+    .notification-item:hover .notification-actions {
+        opacity: 1;
+    }
+    
+    .api-key-container {
+        position: relative;
+    }
+    
+    .api-key-field {
+        padding-right: 90px;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .copy-btn {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+    }
+    
+    .activity-timeline {
+        position: relative;
+        margin-left: 45px;
+    }
+    
+    .activity-timeline::before {
+        content: '';
+        position: absolute;
+        left: -30px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 25px;
+    }
+    
+    .timeline-icon {
+        position: absolute;
+        left: -45px;
+        top: 0;
+        width: 30px;
+        height: 30px;
+        background-color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        color: var(--pokemon-primary);
+    }
+    
+    .timeline-content {
+        background-color: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .timeline-date {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">My Profile</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Profile</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="profile-header">
+    <div class="profile-header-content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="ms-4">
+                        <h2 class="profile-name">{{ user.first_name or '' }} {{ user.last_name or '' }} <small>({{ user.username }})</small></h2>
+                        <div class="profile-role">
+                            <i class="fas {% if user.role == 'admin' %}fa-user-shield{% else %}fa-user{% endif %} me-1"></i>
+                            {{ user.role|capitalize }}
+                        </div>
+                        <div class="text-white-50">{{ user.email }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="profile-meta">
+                    <div class="meta-item">
+                        <div class="meta-value">{{ notifications|length }}</div>
+                        <div class="meta-label">Notifications</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">{{ user.created_at|replace(' ', 'T')|datetime|dateformat('%d/%m/%Y') }}</div>
+                        <div class="meta-label">Member Since</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">{{ user.last_login|replace(' ', 'T')|datetime|dateformat('%d/%m/%Y') if user.last_login else 'Never' }}</div>
+                        <div class="meta-label">Last Login</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="profile-card">
+    <div class="card-header bg-transparent">
+        <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="account-tab" data-bs-toggle="tab" href="#account" role="tab" aria-controls="account" aria-selected="true">
+                    <i class="fas fa-user-cog me-2"></i> Account Settings
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="notifications-tab" data-bs-toggle="tab" href="#notifications" role="tab" aria-controls="notifications" aria-selected="false">
+                    <i class="fas fa-bell me-2"></i> Notification Preferences
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="api-tab" data-bs-toggle="tab" href="#api" role="tab" aria-controls="api" aria-selected="false">
+                    <i class="fas fa-key me-2"></i> API Access
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="activity-tab" data-bs-toggle="tab" href="#activity" role="tab" aria-controls="activity" aria-selected="false">
+                    <i class="fas fa-history me-2"></i> Recent Activity
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Account Settings Tab -->
+            <div class="tab-pane fade show active" id="account" role="tabpanel" aria-labelledby="account-tab">
+                <form action="{{ url_for('auth.update_profile') }}" method="POST">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Personal Information</h5>
+                            <div class="mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name or '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name or '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Change Password</h5>
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password">
+                            </div>
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password">
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                                <div class="invalid-feedback" id="passwordMatchFeedback">
+                                    Passwords do not match
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+            
+            <!-- Notification Preferences Tab -->
+            <div class="tab-pane fade" id="notifications" role="tabpanel" aria-labelledby="notifications-tab">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Notification Settings</h5>
+                        <form action="{{ url_for('auth.update_preferences') }}" method="POST">
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="notifications_email" name="notifications_email" {% if preferences and preferences.notifications_email %}checked{% endif %}>
+                                <label class="form-check-label" for="notifications_email">Email Notifications</label>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="notifications_browser" name="notifications_browser" {% if preferences and preferences.notifications_browser %}checked{% endif %}>
+                                <label class="form-check-label" for="notifications_browser">Browser Notifications</label>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="notifications_telegram" name="notifications_telegram" {% if preferences and preferences.notifications_telegram %}checked{% endif %}>
+                                <label class="form-check-label" for="notifications_telegram">Telegram Notifications</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="refresh_interval" class="form-label">Auto-refresh Interval (seconds)</label>
+                                <input type="number" class="form-control" id="refresh_interval" name="refresh_interval" value="{{ preferences.refresh_interval if preferences and preferences.refresh_interval else 60 }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Add New Alert</h5>
+                        <form action="{{ url_for('auth.add_notification') }}" method="POST">
+                            <div class="mb-3">
+                                <label for="collection" class="form-label">Collection</label>
+                                <select class="form-select" id="collection" name="collection" required>
+                                    <option value="">Select a collection</option>
+                                    <option value="all">All Collections</option>
+                                    {% for collection in ["Collection Prismatique", "Collection Aventures Ensemble", "Collection Eaux Florissantes"] %}
+                                    <option value="{{ collection }}">{{ collection }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="product" class="form-label">Product (optional)</label>
+                                <input type="text" class="form-control" id="product" name="product" placeholder="Leave empty for all products">
+                            </div>
+                            <div class="mb-3">
+                                <label for="site" class="form-label">Website (optional)</label>
+                                <input type="text" class="form-control" id="site" name="site" placeholder="Leave empty for all sites">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="min_price" class="form-label">Min Price (€)</label>
+                                        <input type="number" class="form-control" id="min_price" name="min_price" value="0" min="0" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="max_price" class="form-label">Max Price (€)</label>
+                                        <input type="number" class="form-control" id="max_price" name="max_price" value="9999" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Alert</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <h5>Your Alert Preferences</h5>
+                <div class="notification-list">
+                    {% if notifications %}
+                        {% for notification in notifications %}
+                            <div class="notification-item">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <h6>{{ notification.collection }}</h6>
+                                        {% if notification.product %}
+                                            <div><strong>Product:</strong> {{ notification.product }}</div>
+                                        {% else %}
+                                            <div><em>All products in collection</em></div>
+                                        {% endif %}
+                                        
+                                        {% if notification.site %}
+                                            <div><strong>Site:</strong> {{ notification.site }}</div>
+                                        {% else %}
+                                            <div><em>All monitored sites</em></div>
+                                        {% endif %}
+                                        
+                                        <div><strong>Price Range:</strong> {{ notification.min_price }}€ - {{ notification.max_price }}€</div>
+                                        <small class="text-muted">Created on {{ notification.created_at }}</small>
+                                    </div>
+                                    <div class="col-md-3 text-end notification-actions">
+                                        <form action="{{ url_for('delete_user_notification', notification_id=notification.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this alert?')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                            <h5>No Alert Preferences</h5>
+                            <p class="text-muted">You haven't set up any alerts yet. Add a new alert to get notified when Pokemon cards become available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- API Access Tab -->
+            <div class="tab-pane fade" id="api" role="tabpanel" aria-labelledby="api-tab">
+                <h5>API Access</h5>
+                <p>Use this API key to access Pokemon Stock Monitor API. <strong>Keep this key secret!</strong></p>
+                
+                <div class="mb-4">
+                    <label for="api_key" class="form-label">Your API Key</label>
+                    <div class="api-key-container">
+                        <input type="text" class="form-control api-key-field" id="api_key" value="{{ user.api_key }}" readonly>
+                        <button type="button" class="btn btn-sm btn-outline-primary copy-btn" id="copyApiKey">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">API Examples</div>
+                    <div class="card-body">
+                        <h6>Get Available Products</h6>
+                        <div class="bg-light p-3 rounded mb-3">
+                            <code>curl -X GET "https://pokemon-monitor.com/api/available" -H "X-API-Key: {{ user.api_key }}"</code>
+                        </div>
+                        
+                        <h6>Check Specific Collection</h6>
+                        <div class="bg-light p-3 rounded mb-3">
+                            <code>curl -X GET "https://pokemon-monitor.com/api/collections/prismatique" -H "X-API-Key: {{ user.api_key }}"</code>
+                        </div>
+                        
+                        <h6>Add Custom Alert</h6>
+                        <div class="bg-light p-3 rounded">
+                            <code>curl -X POST "https://pokemon-monitor.com/api/alerts" \<br>
+                            -H "X-API-Key: {{ user.api_key }}" \<br>
+                            -H "Content-Type: application/json" \<br>
+                            -d '{"collection": "Collection Prismatique", "min_price": 0, "max_price": 50}'</code>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> For complete API documentation, visit our <a href="#" class="alert-link">Developer Portal</a>.
+                </div>
+            </div>
+            
+            <!-- Recent Activity Tab -->
+            <div class="tab-pane fade" id="activity" role="tabpanel" aria-labelledby="activity-tab">
+                <h5>Recent Activity</h5>
+                
+                <div class="activity-timeline mt-4">
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Logged in to the system</div>
+                            <div class="timeline-date">{{ user.last_login }}</div>
+                            <div>Successfully authenticated from IP 192.168.1.1</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Created new alert for Collection Prismatique</div>
+                            <div class="timeline-date">15/03/2025 14:30:22</div>
+                            <div>Set up notification for all products with price range 0€ - 100€</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Received stock alert notification</div>
+                            <div class="timeline-date">10/03/2025 09:15:07</div>
+                            <div>Collection Eaux Florissantes - Coffret Dresseur d'élite is available on Amazon France</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Updated profile information</div>
+                            <div class="timeline-date">05/03/2025 16:42:13</div>
+                            <div>Changed email address and personal information</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Account created</div>
+                            <div class="timeline-date">{{ user.created_at }}</div>
+                            <div>Successfully registered and received admin approval</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password confirmation validation
+        const newPassword = document.getElementById('new_password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const passwordMatchFeedback = document.getElementById('passwordMatchFeedback');
+        
+        function validatePasswordMatch() {
+            if (confirmPassword.value && newPassword.value !== confirmPassword.value) {
+                confirmPassword.classList.add('is-invalid');
+                passwordMatchFeedback.style.display = 'block';
+            } else {
+                confirmPassword.classList.remove('is-invalid');
+                passwordMatchFeedback.style.display = 'none';
+            }
+        }
+        
+        if (confirmPassword) {
+            confirmPassword.addEventListener('input', validatePasswordMatch);
+            newPassword.addEventListener('input', validatePasswordMatch);
+        }
+        
+        // Copy API Key functionality
+        const copyApiKeyBtn = document.getElementById('copyApiKey');
+        const apiKeyField = document.getElementById('api_key');
+        
+        if (copyApiKeyBtn) {
+            copyApiKeyBtn.addEventListener('click', function() {
+                apiKeyField.select();
+                document.execCommand('copy');
+                
+                // Show success message
+                const originalText = copyApiKeyBtn.innerHTML;
+                copyApiKeyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                copyApiKeyBtn.classList.remove('btn-outline-primary');
+                copyApiKeyBtn.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    copyApiKeyBtn.innerHTML = originalText;
+                    copyApiKeyBtn.classList.remove('btn-success');
+                    copyApiKeyBtn.classList.add('btn-outline-primary');
+                }, 2000);
+                
+                // Show toast
+                showToast('Success', 'API key copied to clipboard!', 'success');
+            });
+        }
+        
+        // Process hash in URL to activate appropriate tab
+        const url = window.location.href;
+        const hash = url.substring(url.indexOf('#') + 1);
+        
+        if (hash) {
+            const tabId = `${hash}-tab`;
+            const tab = document.getElementById(tabId);
+            
+            if (tab) {
+                tab.click();
+            }
+        }
+    });
+</script>
+{% endblock %}

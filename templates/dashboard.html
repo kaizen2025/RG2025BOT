@@ -1,0 +1,1108 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Pokemon Stock Monitor{% endblock %}
+
+{% block styles %}
+<style>
+    .stats-card {
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+        border: none;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats-icon {
+        font-size: 2rem;
+        background: linear-gradient(135deg, var(--pokemon-primary) 0%, #667eea 100%);
+        border-radius: 12px;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .stats-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .alert-card {
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 15px;
+        overflow: hidden;
+        transition: transform 0.2s;
+        position: relative;
+    }
+    
+    .alert-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .alert-card-header {
+        padding: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .alert-card-body {
+        padding: 15px;
+    }
+    
+    .alert-card-footer {
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        font-size: 0.85rem;
+    }
+    
+    .alert-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .alert-badge.in-stock {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .alert-badge.out-of-stock {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+    
+    .collection-card {
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        transition: transform 0.3s;
+        height: 100%;
+        border: none;
+    }
+    
+    .collection-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .collection-image {
+        height: 180px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+    
+    .collection-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%);
+        display: flex;
+        align-items: flex-end;
+        padding: 15px;
+    }
+    
+    .collection-title {
+        color: white;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .collection-stats {
+        padding: 15px;
+    }
+    
+    .collection-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background-color: rgba(255, 255, 255, 0.8);
+        color: var(--pokemon-primary);
+    }
+    
+    .system-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    
+    .status-indicator.online {
+        background-color: #198754;
+    }
+    
+    .status-indicator.warning {
+        background-color: #ffc107;
+    }
+    
+    .status-indicator.offline {
+        background-color: #dc3545;
+    }
+    
+    .status-text {
+        font-weight: 500;
+    }
+    
+    .check-countdown {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: var(--pokemon-primary);
+    }
+    
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+    }
+    
+    .notification-drawer {
+        position: fixed;
+        top: 70px;
+        right: 0;
+        width: 350px;
+        bottom: 0;
+        background-color: white;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        transform: translateX(100%);
+        transition: transform 0.3s;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .notification-drawer.open {
+        transform: translateX(0);
+    }
+    
+    .notification-drawer-header {
+        background-color: var(--pokemon-primary);
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .notification-drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+    }
+    
+    .notification-drawer-footer {
+        padding: 15px;
+        border-top: 1px solid #f0f0f0;
+        text-align: center;
+    }
+    
+    .notification-item {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.2s;
+        position: relative;
+    }
+    
+    .notification-item:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        transform: translateY(-3px);
+    }
+    
+    .notification-item.unread {
+        border-left: 3px solid var(--pokemon-primary);
+    }
+    
+    .notification-item .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+    }
+    
+    .notification-item:hover .close-btn {
+        opacity: 1;
+    }
+    
+    .notification-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .notification-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+    
+    .notification-content {
+        margin-bottom: 10px;
+    }
+    
+    .notification-actions {
+        margin-top: 10px;
+    }
+    
+    @media (max-width: 767.98px) {
+        .notification-drawer {
+            width: 100%;
+        }
+    }
+    
+    /* Dark theme adjustments */
+    body.dark-theme .collection-card,
+    body.dark-theme .stats-card,
+    body.dark-theme .alert-card {
+        background-color: #1e1e1e;
+    }
+    
+    body.dark-theme .alert-card-footer {
+        background-color: #2d2d2d;
+    }
+    
+    body.dark-theme .notification-drawer {
+        background-color: #1e1e1e;
+    }
+    
+    body.dark-theme .notification-item {
+        background-color: #2d2d2d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Notification Drawer -->
+<div class="notification-drawer" id="notificationDrawer">
+    <div class="notification-drawer-header">
+        <h5 class="mb-0"><i class="fas fa-bell me-2"></i> Notifications</h5>
+        <button type="button" class="btn-close btn-close-white" id="closeNotificationDrawer"></button>
+    </div>
+    <div class="notification-drawer-body" id="notificationsContainer">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+    <div class="notification-drawer-footer">
+        <button class="btn btn-outline-primary btn-sm" id="markAllAsRead">Mark All as Read</button>
+        <button class="btn btn-outline-danger btn-sm" id="clearAllNotifications">Clear All</button>
+    </div>
+</div>
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">Dashboard</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <button class="btn btn-primary" id="openNotifications">
+                <i class="fas fa-bell me-1"></i> Notifications
+                <span class="badge bg-light text-dark ms-1" id="notificationCount">0</span>
+            </button>
+            <button class="btn btn-outline-primary ms-2" id="refreshDashboard">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="stats-value" id="sitesCount">0</div>
+                        <div class="stats-label">Monitored Sites</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="stats-value" id="productsCount">0</div>
+                        <div class="stats-label">Products</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="stats-value" id="availableCount">0</div>
+                        <div class="stats-label">In Stock</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="stats-value" id="checksCount">0</div>
+                        <div class="stats-label">Total Checks</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- System Status and Next Check -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-server me-2"></i> System Status
+            </div>
+            <div class="card-body">
+                <div class="system-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">Bot Online</span>
+                </div>
+                <div class="system-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">Database Connected</span>
+                </div>
+                <div class="system-status">
+                    <span class="status-indicator online" id="networkStatus"></span>
+                    <span class="status-text" id="networkStatusText">Network Active</span>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-2">Next check in:</div>
+                <div class="check-countdown" id="nextCheckCountdown">--:--</div>
+                <div class="progress">
+                    <div id="nextCheckProgress" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <div class="text-muted">Last check:</div>
+                        <div class="fw-bold" id="lastCheckTime">--:--:--</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" id="forceCheckButton">
+                            <i class="fas fa-redo me-1"></i> Force Check
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history me-2"></i> Recent Activity
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="activityLog">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Collection Overview -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-layer-group me-2"></i> Collections Overview
+            </div>
+            <div class="card-body">
+                <div class="row" id="collectionsOverview">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Latest Alerts -->
+        <div class="card" id="alertsSection">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-bell me-2"></i> Latest Alerts
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" id="clearAlertsButton">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="alertsContainer">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Charts and Statistics -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i> Stock Availability Trend
+            </div>
+            <div class="card-body">
+                <canvas id="stockTrendChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i> Availability by Site
+            </div>
+            <div class="card-body">
+                <canvas id="siteAvailabilityChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // DOM Elements
+    const openNotificationsBtn = document.getElementById('openNotifications');
+    const closeNotificationDrawerBtn = document.getElementById('closeNotificationDrawer');
+    const notificationDrawer = document.getElementById('notificationDrawer');
+    const refreshDashboardBtn = document.getElementById('refreshDashboard');
+    const notificationCount = document.getElementById('notificationCount');
+    const notificationsContainer = document.getElementById('notificationsContainer');
+    const forceCheckButton = document.getElementById('forceCheckButton');
+    const clearAlertsButton = document.getElementById('clearAlertsButton');
+    const markAllAsReadBtn = document.getElementById('markAllAsRead');
+    const clearAllNotificationsBtn = document.getElementById('clearAllNotifications');
+    
+    // Charts
+    let stockTrendChart;
+    let siteAvailabilityChart;
+    
+    // Data
+    let nextCheckTime;
+    let alertsData = [];
+    
+    // Notification Drawer
+    function toggleNotificationDrawer() {
+        notificationDrawer.classList.toggle('open');
+    }
+    
+    openNotificationsBtn.addEventListener('click', toggleNotificationDrawer);
+    closeNotificationDrawerBtn.addEventListener('click', toggleNotificationDrawer);
+    
+    // Update countdown
+    function updateCountdown() {
+        if (!nextCheckTime) return;
+        
+        const now = new Date();
+        const next = new Date(nextCheckTime.replace(' ', 'T'));
+        
+        // If date is invalid, don't update
+        if (isNaN(next.getTime())) return;
+        
+        const diffMs = next - now;
+        
+        if (diffMs <= 0) {
+            document.getElementById('nextCheckCountdown').textContent = "In progress...";
+            document.getElementById('nextCheckProgress').style.width = "100%";
+            return;
+        }
+        
+        const diffSec = Math.floor(diffMs / 1000);
+        const minutes = Math.floor(diffSec / 60);
+        const seconds = diffSec % 60;
+        
+        document.getElementById('nextCheckCountdown').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Calculate progress
+        const totalInterval = 600; // 10 minutes in seconds
+        const progress = 100 - ((diffSec / totalInterval) * 100);
+        document.getElementById('nextCheckProgress').style.width = `${progress}%`;
+    }
+    
+    // Initialize charts
+    function initCharts() {
+        // Stock Trend Chart
+        const stockTrendCtx = document.getElementById('stockTrendChart').getContext('2d');
+        stockTrendChart = new Chart(stockTrendCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'In Stock Products',
+                    data: [12, 19, 3, 5, 2, 3],
+                    backgroundColor: 'rgba(59, 91, 167, 0.2)',
+                    borderColor: 'rgba(59, 91, 167, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Site Availability Chart
+        const siteAvailabilityCtx = document.getElementById('siteAvailabilityChart').getContext('2d');
+        siteAvailabilityChart = new Chart(siteAvailabilityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Amazon', 'Fnac', 'Cultura', 'Carrefour', 'Joué Club', 'King Jouet'],
+                datasets: [{
+                    data: [12, 19, 3, 5, 2, 3],
+                    backgroundColor: [
+                        'rgba(59, 91, 167, 0.7)',
+                        'rgba(102, 126, 234, 0.7)',
+                        'rgba(255, 203, 5, 0.7)',
+                        'rgba(255, 150, 113, 0.7)',
+                        'rgba(46, 204, 113, 0.7)',
+                        'rgba(52, 152, 219, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update collections overview
+    function updateCollectionsOverview(collectionsData) {
+        const container = document.getElementById('collectionsOverview');
+        let html = '';
+        
+        if (collectionsData && Object.keys(collectionsData).length > 0) {
+            Object.values(collectionsData).forEach(collection => {
+                const inStockCount = collection.in_stock_count;
+                const totalProducts = collection.products.length;
+                const imageUrl = collection.image_url || 'https://via.placeholder.com/300x200?text=No+Image';
+                
+                html += `
+                    <div class="col-md-4 mb-4">
+                        <div class="collection-card">
+                            <div class="collection-image" style="background-image: url('${imageUrl}')">
+                                <div class="collection-overlay">
+                                    <h5 class="collection-title">${collection.name}</h5>
+                                </div>
+                                <div class="collection-badge">
+                                    <i class="fas fa-box me-1"></i> ${inStockCount}/${totalProducts}
+                                </div>
+                            </div>
+                            <div class="collection-stats">
+                                <div class="mb-2">Stock Availability:</div>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${(inStockCount / totalProducts) * 100}%" 
+                                        aria-valuenow="${inStockCount}" aria-valuemin="0" aria-valuemax="${totalProducts}">
+                                        ${inStockCount}/${totalProducts}
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('collections') }}?collection=${encodeURIComponent(collection.name)}" class="btn btn-sm btn-primary w-100">
+                                    <i class="fas fa-search me-1"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html = `
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No collection data available.
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+    }
+    
+    // Update alerts container
+    function updateAlertsContainer(alerts) {
+        const container = document.getElementById('alertsContainer');
+        let html = '';
+        
+        if (alerts && alerts.length > 0) {
+            alerts.forEach(alert => {
+                const productData = alert.product_data || {};
+                const price = productData.price ? `${productData.price}€` : 'Price not available';
+                
+                html += `
+                    <div class="alert-card animate__animated animate__fadeIn">
+                        <div class="alert-badge in-stock">In Stock</div>
+                        <div class="alert-card-header">
+                            <h5 class="mb-0">${alert.product_name}</h5>
+                        </div>
+                        <div class="alert-card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <p><strong>Site:</strong> ${alert.source}</p>
+                                    <p><strong>Price:</strong> ${price}</p>
+                                    <p>${alert.message}</p>
+                                    <div class="mt-3">
+                                        <a href="${alert.url}" target="_blank" class="btn btn-sm btn-success">
+                                            <i class="fas fa-external-link-alt me-1"></i> Go to Store
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-secondary dismiss-alert-btn" data-alert-id="${alert.source}_${alert.product_name}">
+                                            <i class="fas fa-times me-1"></i> Dismiss
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    ${alert.screenshots && alert.screenshots.length > 0 ? 
+                                    `<img src="data:image/png;base64,${alert.screenshots[0].data}" class="img-fluid rounded mt-2 screenshot-thumb" 
+                                        data-bs-toggle="modal" data-bs-target="#screenshotModal" 
+                                        data-screenshot="${alert.screenshots[0].data}" alt="Product Screenshot">` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert-card-footer text-muted">
+                            Detected on ${alert.date} at ${alert.timestamp}
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html = `
+                <div class="text-center py-5">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h5>No Active Alerts</h5>
+                    <p class="text-muted">All monitored products are currently out of stock.</p>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Add event listeners to dismiss buttons
+        document.querySelectorAll('.dismiss-alert-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const alertId = this.getAttribute('data-alert-id');
+                dismissAlert(alertId);
+            });
+        });
+        
+        // Add event listeners to screenshot thumbnails
+        document.querySelectorAll('.screenshot-thumb').forEach(img => {
+            img.addEventListener('click', function() {
+                const screenshotData = this.getAttribute('data-screenshot');
+                document.getElementById('screenshotImg').src = `data:image/png;base64,${screenshotData}`;
+            });
+        });
+    }
+    
+    // Update notification drawer
+    function updateNotificationDrawer(alerts) {
+        let html = '';
+        
+        if (alerts && alerts.length > 0) {
+            alerts.forEach(alert => {
+                const productData = alert.product_data || {};
+                const price = productData.price ? `${productData.price}€` : 'Price not available';
+                
+                html += `
+                    <div class="notification-item unread">
+                        <button type="button" class="btn-close close-btn" data-alert-id="${alert.source}_${alert.product_name}"></button>
+                        <div class="notification-title">${alert.product_name}</div>
+                        <div class="notification-meta">${alert.source} • ${alert.date} ${alert.timestamp}</div>
+                        <div class="notification-content">
+                            <div class="fw-bold text-success">IN STOCK</div>
+                            <div>Price: ${price}</div>
+                        </div>
+                        <div class="notification-actions">
+                            <a href="${alert.url}" target="_blank" class="btn btn-sm btn-primary">
+                                <i class="fas fa-external-link-alt me-1"></i> View
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html = `
+                <div class="text-center py-5">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h5>No Notifications</h5>
+                    <p class="text-muted">You're all caught up!</p>
+                </div>
+            `;
+        }
+        
+        notificationsContainer.innerHTML = html;
+        
+        // Update notification counter
+        notificationCount.textContent = alerts ? alerts.length : '0';
+        
+        // Add event listeners to close buttons
+        document.querySelectorAll('.notification-item .close-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const alertId = this.getAttribute('data-alert-id');
+                this.closest('.notification-item').remove();
+                dismissAlert(alertId);
+            });
+        });
+    }
+    
+    // Update activity log
+    function updateActivityLog(stats) {
+        const container = document.getElementById('activityLog');
+        let html = '';
+        
+        // Add activities
+        html += `
+            <a href="#" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">System check completed</h6>
+                    <small class="text-muted">${stats.last_check ? formatDate(stats.last_check) : 'Never'}</small>
+                </div>
+                <p class="mb-1 small">Checked ${stats.monitored_sites ? stats.monitored_sites.length : 0} sites for stock availability</p>
+            </a>
+        `;
+        
+        if (stats.last_alert) {
+            html += `
+                <a href="#" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">Stock alert detected</h6>
+                        <small class="text-muted">${formatDate(stats.last_alert)}</small>
+                    </div>
+                    <p class="mb-1 small">New stock availability alert was triggered</p>
+                </a>
+            `;
+        }
+        
+        html += `
+            <a href="#" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">Bot started</h6>
+                    <small class="text-muted">Today 08:30</small>
+                </div>
+                <p class="mb-1 small">The monitoring system was initialized</p>
+            </a>
+            
+            <a href="#" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">User logged in</h6>
+                    <small class="text-muted">Today 08:25</small>
+                </div>
+                <p class="mb-1 small">Successfully authenticated</p>
+            </a>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    // Update dashboard data
+    function updateDashboard() {
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                // Update stats
+                document.getElementById('sitesCount').textContent = data.monitored_sites ? data.monitored_sites.length : '0';
+                
+                let totalProducts = 0;
+                let availableProducts = 0;
+                
+                if (data.collection_results) {
+                    Object.values(data.collection_results).forEach(collection => {
+                        totalProducts += collection.products.length;
+                        availableProducts += collection.in_stock_count;
+                    });
+                    
+                    updateCollectionsOverview(data.collection_results);
+                }
+                
+                document.getElementById('productsCount').textContent = totalProducts;
+                document.getElementById('availableCount').textContent = availableProducts;
+                document.getElementById('checksCount').textContent = data.total_checks || '0';
+                
+                // Update system status
+                document.getElementById('lastCheckTime').textContent = data.last_check ? formatDate(data.last_check) : 'Never';
+                
+                // Check network status
+                const networkStatus = document.getElementById('networkStatus');
+                const networkStatusText = document.getElementById('networkStatusText');
+                
+                const lastCheckTime = data.last_check ? new Date(data.last_check.replace(' ', 'T')) : null;
+                const now = new Date();
+                
+                if (lastCheckTime && (now - lastCheckTime) < 15 * 60 * 1000) {
+                    networkStatus.className = 'status-indicator online';
+                    networkStatusText.textContent = 'Network Active';
+                } else {
+                    networkStatus.className = 'status-indicator warning';
+                    networkStatusText.textContent = 'Network Status Unknown';
+                }
+                
+                // Update countdown
+                nextCheckTime = data.next_check;
+                updateCountdown();
+                
+                // Update alerts
+                alertsData = data.active_alerts || [];
+                updateAlertsContainer(alertsData);
+                updateNotificationDrawer(alertsData);
+                
+                // Update activity log
+                updateActivityLog(data);
+                
+                // Update charts with real data
+                if (stockTrendChart && siteAvailabilityChart) {
+                    updateChartData(data);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard data:', error);
+                showToast('Error', 'Failed to update dashboard data. Please try again.', 'danger');
+                
+                // Set network status to offline
+                const networkStatus = document.getElementById('networkStatus');
+                const networkStatusText = document.getElementById('networkStatusText');
+                networkStatus.className = 'status-indicator offline';
+                networkStatusText.textContent = 'Network Error';
+            });
+    }
+    
+    // Update chart data
+    function updateChartData(data) {
+        // Mock data for stock trend
+        const mockDates = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const mockStockData = [5, 8, 12, 7, 15, availableCount.textContent];
+        
+        stockTrendChart.data.labels = mockDates;
+        stockTrendChart.data.datasets[0].data = mockStockData;
+        stockTrendChart.update();
+        
+        // Site availability data
+        if (data.monitored_sites) {
+            const siteLabels = data.monitored_sites.map(site => site.name);
+            const siteData = data.monitored_sites.map(site => {
+                let inStockCount = 0;
+                for (const key in data.results) {
+                    if (data.results[key].site_name === site.name && data.results[key].available) {
+                        inStockCount++;
+                    }
+                }
+                return inStockCount;
+            });
+            
+            siteAvailabilityChart.data.labels = siteLabels;
+            siteAvailabilityChart.data.datasets[0].data = siteData;
+            siteAvailabilityChart.update();
+        }
+    }
+    
+    // Format date
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        
+        const date = new Date(dateString.replace(' ', 'T'));
+        
+        // If date is invalid, return original string
+        if (isNaN(date.getTime())) return dateString;
+        
+        return date.toLocaleTimeString();
+    }
+    
+    // Dismiss alert
+    function dismissAlert(alertId) {
+        const [source, productName] = alertId.split('_');
+        
+        // Filter out the dismissed alert
+        alertsData = alertsData.filter(alert => 
+            !(alert.source === source && alert.product_name === productName)
+        );
+        
+        // Update UI
+        updateAlertsContainer(alertsData);
+        updateNotificationDrawer(alertsData);
+        notificationCount.textContent = alertsData.length;
+        
+        // Show toast
+        showToast('Alert Dismissed', 'The alert has been removed from your notifications.', 'info');
+    }
+    
+    // Event: Force Check
+    forceCheckButton.addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...';
+        
+        // Simulate a check (in a real app, this would call an API endpoint)
+        setTimeout(() => {
+            updateDashboard();
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-redo me-1"></i> Force Check';
+            showToast('Check Complete', 'All sites have been checked for stock availability.', 'success');
+        }, 3000);
+    });
+    
+    // Event: Clear All Alerts
+    clearAlertsButton.addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear all alerts?')) {
+            alertsData = [];
+            updateAlertsContainer(alertsData);
+            updateNotificationDrawer(alertsData);
+            notificationCount.textContent = '0';
+            showToast('Alerts Cleared', 'All alerts have been cleared.', 'info');
+        }
+    });
+    
+    // Event: Mark All Notifications as Read
+    markAllAsReadBtn.addEventListener('click', function() {
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.classList.remove('unread');
+        });
+        showToast('Notifications', 'All notifications marked as read', 'success');
+    });
+    
+    // Event: Clear All Notifications
+    clearAllNotificationsBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear all notifications?')) {
+            alertsData = [];
+            updateNotificationDrawer(alertsData);
+            notificationCount.textContent = '0';
+            showToast('Notifications', 'All notifications cleared', 'info');
+        }
+    });
+    
+    // Event: Refresh Dashboard
+    refreshDashboardBtn.addEventListener('click', function() {
+        this.disabled = true;
+        const originalContent = this.innerHTML;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...';
+        
+        updateDashboard();
+        
+        setTimeout(() => {
+            this.disabled = false;
+            this.innerHTML = originalContent;
+            showToast('Dashboard Refreshed', 'Dashboard data has been updated.', 'success');
+        }, 1000);
+    });
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize charts
+        initCharts();
+        
+        // Update dashboard data
+        updateDashboard();
+        
+        // Set up interval to update countdown
+        setInterval(updateCountdown, 1000);
+        
+        // Set up interval to refresh dashboard data
+        setInterval(updateDashboard, 60000); // Refresh every minute
+    });
+</script>
+{% endblock %}

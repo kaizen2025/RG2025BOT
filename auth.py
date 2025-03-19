@@ -28,7 +28,7 @@ def init_db():
         
         # Vérification si l'utilisateur admin existe déjà
         admin_exists = cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'").fetchone()[0]
-        logger.info(f"Vérification utilisateur admin: {'Existe' if admin_exists else 'N\'existe pas'}")
+        logger.info(f"Vérification utilisateur admin: {'Existe' if admin_exists else \"N'existe pas\"}")
         
         if not admin_exists:
             # Création de l'utilisateur admin par défaut

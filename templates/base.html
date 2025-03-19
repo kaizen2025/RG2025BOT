@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pokemon Stock Monitor{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+    <style>
+        :root {
+            --pokemon-primary: #3B5BA7;
+            --pokemon-secondary: #FFCB05;
+            --pokemon-accent: #FF0000;
+            --pokemon-light: #f8f9fa;
+            --pokemon-dark: #212529;
+            --sidebar-width: 260px;
+        }
+        
+        body {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .logo-text {
+            font-weight: 700;
+            color: var(--pokemon-primary);
+            letter-spacing: -0.5px;
+        }
+        
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            height: 70px;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand-icon {
+            font-size: 1.8rem;
+            color: var(--pokemon-secondary);
+            margin-right: 10px;
+        }
+        
+        .custom-dropdown .dropdown-menu {
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 0;
+            min-width: 280px;
+        }
+        
+        .custom-dropdown .dropdown-header {
+            background-color: var(--pokemon-primary);
+            color: white;
+            padding: 12px 15px;
+            font-weight: 600;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .custom-dropdown .dropdown-item {
+            padding: 10px 15px;
+            transition: all 0.2s;
+        }
+        
+        .custom-dropdown .dropdown-item:hover {
+            background-color: rgba(59, 91, 167, 0.05);
+        }
+        
+        .custom-dropdown .dropdown-item i {
+            width: 20px;
+            text-align: center;
+            margin-right: 10px;
+            color: var(--pokemon-primary);
+        }
+        
+        .custom-dropdown .dropdown-divider {
+            margin: 5px 0;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - 70px);
+            background-color: white;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+            transition: all 0.3s;
+            overflow-y: auto;
+            padding-bottom: 30px;
+        }
+        
+        .sidebar.collapsed {
+            width: 70px;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .sidebar-nav {
+            padding: 15px 0;
+        }
+        
+        .nav-item {
+            position: relative;
+        }
+        
+        .nav-link {
+            padding: 12px 20px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .nav-link i {
+            width: 30px;
+            font-size: 1.1rem;
+            text-align: center;
+            color: #6c757d;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(59, 91, 167, 0.05);
+            color: var(--pokemon-primary);
+        }
+        
+        .nav-link:hover i,
+        .nav-link.active i {
+            color: var(--pokemon-primary);
+        }
+        
+        .nav-link.active {
+            background-color: rgba(59, 91, 167, 0.08);
+            color: var(--pokemon-primary);
+            font-weight: 600;
+        }
+        
+        .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: var(--pokemon-primary);
+        }
+        
+        .nav-text {
+            margin-left: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: opacity 0.2s;
+        }
+        
+        .sidebar.collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+        }
+        
+        .content-wrapper {
+            margin-left: var(--sidebar-width);
+            padding: 25px;
+            transition: all 0.3s;
+        }
+        
+        .content-wrapper.expanded {
+            margin-left: 70px;
+        }
+        
+        .page-header {
+            margin-bottom: 25px;
+        }
+        
+        .page-title {
+            font-weight: 700;
+            color: var(--pokemon-dark);
+            margin-bottom: 10px;
+        }
+        
+        .breadcrumb {
+            background-color: transparent;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .breadcrumb-item a {
+            color: #6c757d;
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item.active {
+            color: var(--pokemon-primary);
+            font-weight: 500;
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        
+        .custom-toast {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--pokemon-primary);
+            min-width: 300px;
+            max-width: 350px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            animation: slideInRight 0.3s ease-in-out;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .toast-header {
+            background-color: transparent;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px 15px;
+        }
+        
+        .toast-body {
+            padding: 12px 15px;
+        }
+        
+        .toggle-sidebar-btn {
+            margin-right: 15px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #6c757d;
+            transition: color 0.2s;
+        }
+        
+        .toggle-sidebar-btn:hover {
+            color: var(--pokemon-primary);
+        }
+        
+        /* Theme Switcher */
+        .theme-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            margin-left: 15px;
+        }
+        
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .theme-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .theme-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .theme-switch-slider {
+            background-color: var(--pokemon-primary);
+        }
+        
+        input:checked + .theme-switch-slider:before {
+            transform: translateX(24px);
+        }
+        
+        .theme-switch-icon {
+            position: absolute;
+            font-size: 0.7rem;
+            color: white;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: .4s;
+        }
+        
+        .theme-switch-icon.sun {
+            left: 6px;
+            opacity: 0;
+        }
+        
+        .theme-switch-icon.moon {
+            right: 6px;
+            opacity: 1;
+        }
+        
+        input:checked + .theme-switch-slider .theme-switch-icon.sun {
+            opacity: 1;
+        }
+        
+        input:checked + .theme-switch-slider .theme-switch-icon.moon {
+            opacity: 0;
+        }
+        
+        /* Notification counter */
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--pokemon-accent);
+            color: white;
+            font-size: 0.7rem;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(50%, -50%);
+            font-weight: 600;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                opacity: 0;
+                visibility: hidden;
+            }
+            
+            .sidebar.mobile-visible {
+                width: var(--sidebar-width);
+                opacity: 1;
+                visibility: visible;
+            }
+            
+            .content-wrapper {
+                margin-left: 0;
+            }
+            
+            .content-wrapper.expanded {
+                margin-left: 0;
+            }
+            
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 99;
+                display: none;
+            }
+            
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
+        
+        /* Dark theme */
+        body.dark-theme {
+            background-color: #121212;
+            color: #e1e1e1;
+        }
+        
+        body.dark-theme .navbar,
+        body.dark-theme .sidebar,
+        body.dark-theme .card,
+        body.dark-theme .custom-toast,
+        body.dark-theme .modal-content,
+        body.dark-theme .custom-dropdown .dropdown-menu {
+            background-color: #1e1e1e;
+            color: #e1e1e1;
+        }
+        
+        body.dark-theme .card-header,
+        body.dark-theme .admin-card-header,
+        body.dark-theme .table-light,
+        body.dark-theme .custom-dropdown .dropdown-item:hover {
+            background-color: #2d2d2d;
+            color: #e1e1e1;
+        }
+        
+        body.dark-theme .nav-link,
+        body.dark-theme .page-title,
+        body.dark-theme .table,
+        body.dark-theme .custom-dropdown .dropdown-item {
+            color: #e1e1e1;
+        }
+        
+        body.dark-theme .nav-link:hover,
+        body.dark-theme .nav-link.active {
+            background-color: rgba(59, 91, 167, 0.2);
+        }
+        
+        body.dark-theme .form-control,
+        body.dark-theme .form-select,
+        body.dark-theme .input-group-text {
+            background-color: #333;
+            border-color: #444;
+            color: #e1e1e1;
+        }
+        
+        body.dark-theme .form-control:focus,
+        body.dark-theme .form-select:focus {
+            background-color: #3a3a3a;
+        }
+        
+        body.dark-theme .table {
+            border-color: #444;
+        }
+        
+        body.dark-theme .table td,
+        body.dark-theme .table th {
+            border-color: #444;
+        }
+        
+        body.dark-theme .bg-light {
+            background-color: #2d2d2d !important;
+        }
+        
+        body.dark-theme .text-muted {
+            color: #aaa !important;
+        }
+        
+        body.dark-theme .modal-header,
+        body.dark-theme .modal-footer {
+            border-color: #444;
+        }
+        
+        body.dark-theme .toast-header {
+            background-color: #2d2d2d;
+            color: #e1e1e1;
+            border-color: #444;
+        }
+        
+        body.dark-theme hr {
+            border-color: #444;
+        }
+        
+        body.dark-theme .sidebar-header {
+            border-color: #333;
+        }
+        
+        /* Additional Styles */
+        {% block styles %}{% endblock %}
+    </style>
+</head>
+
+<body class="{% if preferences and preferences.theme == 'dark' %}dark-theme{% endif %}">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center">
+                <span class="toggle-sidebar-btn" id="toggleSidebar">
+                    <i class="fas fa-bars"></i>
+                </span>
+                <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                    <i class="fas fa-gamepad navbar-brand-icon"></i>
+                    <span class="logo-text">Pokemon Stock Monitor</span>
+                </a>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <!-- Theme Switcher -->
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeSwitch" {% if preferences and preferences.theme == 'dark' %}checked{% endif %}>
+                    <span class="theme-switch-slider">
+                        <i class="fas fa-sun theme-switch-icon sun"></i>
+                        <i class="fas fa-moon theme-switch-icon moon"></i>
+                    </span>
+                </label>
+                
+                <!-- Notifications -->
+                <div class="dropdown custom-dropdown ms-3">
+                    <a class="nav-link position-relative" href="#" role="button" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bell"></i>
+                        {% if active_alerts and active_alerts|length > 0 %}
+                        <span class="notification-badge">{{ active_alerts|length }}</span>
+                        {% endif %}
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end animate__animated animate__fadeIn" aria-labelledby="notificationsDropdown">
+                        <div class="dropdown-header">
+                            <i class="fas fa-bell me-2"></i> Notifications
+                        </div>
+                        <div class="notifications-container" style="max-height: 300px; overflow-y: auto;">
+                            {% if active_alerts and active_alerts|length > 0 %}
+                                {% for alert in active_alerts %}
+                                <a class="dropdown-item" href="{{ alert.url }}">
+                                    <div class="d-flex align-items-start">
+                                        <i class="fas fa-exclamation-circle text-danger me-2 mt-1"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ alert.product_name }}</div>
+                                            <div class="small">{{ alert.source }} - {{ alert.product_data.price }}€</div>
+                                            <div class="small text-muted">{{ alert.date }} {{ alert.timestamp }}</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            {% else %}
+                                <div class="dropdown-item text-center text-muted">
+                                    <i class="fas fa-check-circle mb-2"></i>
+                                    <div>No new notifications</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-center" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-cog me-1"></i> Manage Notifications
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="dropdown custom-dropdown ms-3">
+                    <a class="nav-link" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle fa-lg"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end animate__animated animate__fadeIn" aria-labelledby="userDropdown">
+                        <div class="dropdown-header">
+                            <i class="fas fa-user me-2"></i> {{ user.username }}
+                        </div>
+                        <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                            <i class="fas fa-id-card"></i> My Profile
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                        {% if user.role == 'admin' %}
+                        <a class="dropdown-item" href="{{ url_for('auth.admin_dashboard') }}">
+                            <i class="fas fa-user-shield"></i> Admin Panel
+                        </a>
+                        {% endif %}
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Sidebar Overlay (for mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Menu</h5>
+            <button class="btn btn-sm btn-outline-secondary d-md-none" id="closeSidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == url_for('dashboard') %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == url_for('collections') %}active{% endif %}" href="{{ url_for('collections') }}">
+                        <i class="fas fa-layer-group"></i>
+                        <span class="nav-text">Collections</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == url_for('sites') %}active{% endif %}" href="{{ url_for('sites') }}">
+                        <i class="fas fa-globe"></i>
+                        <span class="nav-text">Monitored Sites</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#alertsSection">
+                        <i class="fas fa-bell"></i>
+                        <span class="nav-text">Alerts</span>
+                        {% if active_alerts and active_alerts|length > 0 %}
+                        <span class="badge bg-danger rounded-pill ms-auto">{{ active_alerts|length }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#stats">
+                        <i class="fas fa-chart-bar"></i>
+                        <span class="nav-text">Statistics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#logs">
+                        <i class="fas fa-list"></i>
+                        <span class="nav-text">Activity Logs</span>
+                    </a>
+                </li>
+                
+                <!-- User Management Section -->
+                <li class="nav-item mt-3">
+                    <div class="nav-category px-3 py-2 text-muted small">
+                        <span class="nav-text">USER</span>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == url_for('auth.profile') %}active{% endif %}" href="{{ url_for('auth.profile') }}">
+                        <i class="fas fa-user"></i>
+                        <span class="nav-text">My Profile</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-bell-slash"></i>
+                        <span class="nav-text">My Notifications</span>
+                    </a>
+                </li>
+                
+                <!-- Admin Section -->
+                {% if user.role == 'admin' %}
+                <li class="nav-item mt-3">
+                    <div class="nav-category px-3 py-2 text-muted small">
+                        <span class="nav-text">ADMIN</span>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == url_for('auth.admin_dashboard') %}active{% endif %}" href="{{ url_for('auth.admin_dashboard') }}">
+                        <i class="fas fa-user-shield"></i>
+                        <span class="nav-text">Admin Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-users-cog"></i>
+                        <span class="nav-text">User Management</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-server"></i>
+                        <span class="nav-text">System Settings</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="content-wrapper" id="contentWrapper">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show animate__animated animate__fadeIn" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container"></div>
+    
+    <!-- Audio for alerts -->
+    <audio id="alert-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    
+    <script>
+        // DOM elements
+        const sidebar = document.getElementById('sidebar');
+        const contentWrapper = document.getElementById('contentWrapper');
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebarBtn = document.getElementById('closeSidebar');
+        const themeSwitch = document.getElementById('themeSwitch');
+        
+        // Initialize tooltips and popovers
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        
+        // Toggle sidebar
+        function toggleSidebar() {
+            if (window.innerWidth >= 768) {
+                // Desktop behavior
+                sidebar.classList.toggle('collapsed');
+                contentWrapper.classList.toggle('expanded');
+            } else {
+                // Mobile behavior
+                sidebar.classList.toggle('mobile-visible');
+                sidebarOverlay.classList.toggle('active');
+            }
+        }
+        
+        toggleSidebarBtn.addEventListener('click', toggleSidebar);
+        
+        // Close sidebar when clicking on overlay (mobile only)
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('mobile-visible');
+            sidebarOverlay.classList.remove('active');
+        });
+        
+        closeSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.remove('mobile-visible');
+            sidebarOverlay.classList.remove('active');
+        });
+        
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                sidebarOverlay.classList.remove('active');
+                sidebar.classList.remove('mobile-visible');
+            }
+        });
+        
+        // Theme switching
+        themeSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+                // Save preference to server
+                saveUserPreference('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-theme');
+                localStorage.setItem('theme', 'light');
+                // Save preference to server
+                saveUserPreference('theme', 'light');
+            }
+        });
+        
+        // Save user preference
+        function saveUserPreference(key, value) {
+            fetch('/auth/profile/preferences', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    [key]: value
+                })
+            }).catch(error => console.error('Error saving preference:', error));
+        }
+        
+        // Toast notification function
+        function showToast(title, message, type = 'info') {
+            const toastContainer = document.querySelector('.toast-container');
+            
+            const iconClass = type === 'success' ? 'fas fa-check-circle text-success' :
+                            type === 'warning' ? 'fas fa-exclamation-triangle text-warning' :
+                            type === 'danger' ? 'fas fa-exclamation-circle text-danger' :
+                            'fas fa-info-circle text-info';
+            
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            toast.style.borderLeftColor = type === 'success' ? '#198754' : 
+                                        type === 'warning' ? '#ffc107' : 
+                                        type === 'danger' ? '#dc3545' : 
+                                        '#0dcaf0';
+            
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <i class="${iconClass} me-2"></i>
+                    <strong class="me-auto">${title}</strong>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Remove toast after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 5000);
+            
+            // Close button functionality
+            const closeBtn = toast.querySelector('.btn-close');
+            closeBtn.addEventListener('click', () => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            });
+        }
+        
+        // Add additional JS here
+        {% block scripts %}{% endblock %}
+    </script>
+</body>
+</html>

@@ -7,6 +7,44 @@ import os
 import json
 from functools import wraps
 import re
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("auth")
+
+def init_db():
+    """Initialise la base de données avec le schéma et l'utilisateur admin"""
+    logger.info("Début d'initialisation de la base de données")
+    if not os.path.exists(DB_PATH):
+        logger.info(f"Création du fichier {DB_PATH}")
+    
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Création des tables
+        logger.info("Création du schéma de la base de données")
+        cursor.execute(USER_SCHEMA)
+        cursor.execute(NOTIFICATION_SCHEMA)
+        
+        # Vérification si l'utilisateur admin existe déjà
+        admin_exists = cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'").fetchone()[0]
+        logger.info(f"Vérification utilisateur admin: {'Existe' if admin_exists else 'N\'existe pas'}")
+        
+        if not admin_exists:
+            # Création de l'utilisateur admin par défaut
+            logger.info("Création du compte admin par défaut")
+            hashed_pwd = bcrypt.generate_password_hash('admin123').decode('utf-8')
+            cursor.execute(
+                'INSERT INTO users (username, email, password, role, api_key) VALUES (?, ?, ?, ?, ?)',
+                ('admin', 'admin@pokemon-monitor.com', hashed_pwd, 'admin', str(uuid.uuid4()))
+            )
+        
+        conn.commit()
+        conn.close()
+        logger.info("Initialisation de la base de données réussie")
+    except Exception as e:
+        logger.error(f"Erreur lors de l'initialisation de la base de données: {e}")
+        raise
 
 # Initialisation
 auth_bp = Blueprint('auth', __name__)

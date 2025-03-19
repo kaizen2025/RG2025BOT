@@ -1444,6 +1444,49 @@ def main_program():
 
 
 ###############################################################################
+#                    VERSION SIMPLIFIÉE POUR RENDER                           #
+###############################################################################
+def check_single_site():
+    """Version simplifiée qui vérifie uniquement un site prioritaire."""
+    now = datetime.now()
+    logger.info(f"Simplified check at {now.strftime('%d/%m/%Y %H:%M:%S')}")
+    
+    # Sélectionner un site prioritaire (Amazon France)
+    priority_site = next((site for site in SITES if site['name'] == 'Amazon France'), SITES[0])
+    
+    # Vérifier uniquement ce site
+    for product in priority_site['products'][:3]:  # Limite à 3 produits pour économiser des ressources
+        try:
+            available, message, screenshots, product_data = check_site_product(priority_site, product)
+            logger.info(f"{priority_site['name']} for {product['name']}: {message}")
+            
+            # Si disponible, envoyer des notifications
+            if available:
+                subject = f"ALERT - Pokemon cards in stock!"
+                text = f"Stock availability detected for {product['name']} on {priority_site['name']}.\n\n"
+                text += f"Price: {product_data.get('price', 'N/A')}€\n"
+                text += f"URL: {product['url']}\n\n"
+                
+                alerts = [{
+                    "source": priority_site["name"],
+                    "product_name": product["name"],
+                    "collection": product["collection"],
+                    "message": message,
+                    "url": product["url"],
+                    "screenshots": screenshots,
+                    "product_data": product_data
+                }]
+                
+                send_notifications(subject, text, alerts)
+                logger.info(f"ALERT SENT for {product['name']}")
+        except Exception as e:
+            logger.error(f"Error checking {priority_site['name']} for {product['name']}: {e}")
+        
+        # Pause between requests
+        time.sleep(5)
+
+
+###############################################################################
 #                ENTRY POINT IF RUNNING THIS FILE DIRECTLY                    #
 ###############################################################################
 if __name__ == "__main__":

@@ -1,0 +1,1359 @@
+{% extends "base.html" %}
+
+{% block title %}Collections - Pokemon Stock Monitor{% endblock %}
+
+{% block styles %}
+<style>
+    .collection-header {
+        background: linear-gradient(135deg, var(--pokemon-primary) 0%, #667eea 100%);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .collection-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/static/images/pattern.png');
+        opacity: 0.1;
+        z-index: 0;
+    }
+    
+    .collection-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .collection-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        color: var(--pokemon-secondary);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .collection-tabs {
+        margin-bottom: 30px;
+    }
+    
+    .collection-tabs .nav-link {
+        padding: 15px 25px;
+        border-radius: 10px;
+        margin-right: 10px;
+        background-color: white;
+        color: #6c757d;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .collection-tabs .nav-link:hover {
+        color: var(--pokemon-primary);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .collection-tabs .nav-link.active {
+        background-color: var(--pokemon-primary);
+        color: white;
+    }
+    
+    .product-card {
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+        transition: transform 0.3s, box-shadow 0.3s;
+        overflow: hidden;
+        height: 100%;
+        border: none;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .product-image {
+        height: 200px;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        padding: 20px;
+        background-color: #f8f9fa;
+        position: relative;
+    }
+    
+    .product-status-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .in-stock {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .out-of-stock {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+    
+    .product-info {
+        padding: 20px;
+    }
+    
+    .product-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 50px;
+    }
+    
+    .product-price {
+        color: var(--pokemon-primary);
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    
+    .product-site {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    
+    .product-update {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 15px;
+    }
+    
+    .filter-section {
+        background-color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .filter-label {
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+    
+    .price-slider {
+        margin-top: 15px;
+    }
+    
+    .price-range {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
+    
+    .quick-filter-buttons {
+        margin-bottom: 20px;
+    }
+    
+    .quick-filter-buttons .btn {
+        margin-right: 10px;
+        margin-bottom: 10px;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .section-title {
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin: 0;
+    }
+    
+    /* Product detail modal styles */
+    .product-detail-header {
+        background: linear-gradient(135deg, var(--pokemon-primary) 0%, #667eea 100%);
+        padding: 20px;
+        color: white;
+        border-radius: 10px 10px 0 0;
+    }
+    
+    .product-detail-image {
+        max-height: 300px;
+        object-fit: contain;
+        margin-bottom: 20px;
+    }
+    
+    .product-detail-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--pokemon-primary);
+        margin-bottom: 15px;
+    }
+    
+    .product-detail-site {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .site-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+    }
+    
+    .price-history-chart {
+        margin-top: 30px;
+    }
+    
+    .notification-setup {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+    
+    /* Dark theme adjustments */
+    body.dark-theme .product-card,
+    body.dark-theme .filter-section,
+    body.dark-theme .empty-state {
+        background-color: #1e1e1e;
+    }
+    
+    body.dark-theme .product-image {
+        background-color: #2d2d2d;
+    }
+    
+    body.dark-theme .collection-tabs .nav-link {
+        background-color: #1e1e1e;
+    }
+    
+    body.dark-theme .product-detail-site {
+        background-color: #2d2d2d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">Pokemon Collections</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Collections</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary" id="refreshCollections">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="collection-header">
+    <div class="collection-header-content">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="collection-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h2>Browse Pokemon Collections</h2>
+                <p class="mb-0">Monitor stock availability for the latest Pokemon card collections across multiple retailers.</p>
+            </div>
+            <div class="col-md-6 text-md-end mt-4 mt-md-0">
+                <div class="d-flex flex-column flex-md-row justify-content-md-end">
+                    <div class="me-md-4 mb-3 mb-md-0">
+                        <div class="text-white-50">Tracked Collections</div>
+                        <div class="fs-2 fw-bold" id="collectionsCount">{{ collections|length }}</div>
+                    </div>
+                    <div class="me-md-4 mb-3 mb-md-0">
+                        <div class="text-white-50">Total Products</div>
+                        <div class="fs-2 fw-bold" id="productsCount">0</div>
+                    </div>
+                    <div>
+                        <div class="text-white-50">In Stock</div>
+                        <div class="fs-2 fw-bold" id="inStockCount">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Collection Tabs -->
+<ul class="nav collection-tabs" id="collectionTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-collections" type="button" role="tab" aria-controls="all-collections" aria-selected="true">
+            All Collections
+        </button>
+    </li>
+    {% for collection in collections %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="{{ collection|lower|replace(' ', '-') }}-tab" data-bs-toggle="tab" data-bs-target="#{{ collection|lower|replace(' ', '-') }}" type="button" role="tab" aria-controls="{{ collection|lower|replace(' ', '-') }}" aria-selected="false">
+            {{ collection }}
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+
+<!-- Quick Filters -->
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="filter-label">Quick Filters:</div>
+            <div class="quick-filter-buttons">
+                <button class="btn btn-outline-primary active quick-filter" data-filter="all">All Products</button>
+                <button class="btn btn-outline-success quick-filter" data-filter="in-stock">In Stock</button>
+                <button class="btn btn-outline-danger quick-filter" data-filter="out-of-stock">Out of Stock</button>
+                <button class="btn btn-outline-info quick-filter" data-filter="amazon">Amazon</button>
+                <button class="btn btn-outline-secondary quick-filter" data-filter="fnac">Fnac</button>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="filter-label">Price Range:</div>
+            <div class="price-slider">
+                <div id="priceRangeSlider"></div>
+                <div class="price-range">
+                    <span id="priceRangeMin">0€</span>
+                    <span id="priceRangeMax">200€</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-md-4">
+            <input type="text" class="form-control" id="searchProducts" placeholder="Search products...">
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="sortProducts">
+                <option value="relevance">Sort by Relevance</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="name">Name</option>
+                <option value="last-updated">Last Updated</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="filterSites">
+                <option value="all">All Sites</option>
+                <option value="amazon">Amazon</option>
+                <option value="fnac">Fnac</option>
+                <option value="cultura">Cultura</option>
+                <option value="carrefour">Carrefour</option>
+                <option value="joueclub">Joué Club</option>
+                <option value="kingjouetonline">King Jouet</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" id="applyFilters">
+                <i class="fas fa-filter me-1"></i> Apply
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Content -->
+<div class="tab-content" id="collectionTabsContent">
+    <!-- All Collections Tab -->
+    <div class="tab-pane fade show active" id="all-collections" role="tabpanel" aria-labelledby="all-tab">
+        <div class="section-header">
+            <h3 class="section-title">All Collections</h3>
+            <div>
+                <span class="badge bg-primary" id="allProductsCount">0</span> products
+            </div>
+        </div>
+        
+        <div class="row" id="allProductsContainer">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Individual Collection Tabs -->
+    {% for collection in collections %}
+    <div class="tab-pane fade" id="{{ collection|lower|replace(' ', '-') }}" role="tabpanel" aria-labelledby="{{ collection|lower|replace(' ', '-') }}-tab">
+        <div class="section-header">
+            <h3 class="section-title">{{ collection }}</h3>
+            <div>
+                <span class="badge bg-primary" id="{{ collection|lower|replace(' ', '-') }}Count">0</span> products
+            </div>
+        </div>
+        
+        <div class="row" id="{{ collection|lower|replace(' ', '-') }}Container">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Product Detail Modal -->
+<div class="modal fade" id="productDetailModal" tabindex="-1" aria-labelledby="productDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="product-detail-header">
+                <h5 class="modal-title" id="productDetailModalLabel">Product Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        <img src="" class="product-detail-image" id="productDetailImage" alt="Product Image">
+                    </div>
+                    <div class="col-md-6">
+                        <h4 id="productDetailTitle">Product Title</h4>
+                        <div class="product-detail-price" id="productDetailPrice">€0.00</div>
+                        
+                        <div class="product-detail-site">
+                            <img src="" class="site-icon" id="productDetailSiteIcon" alt="Site Icon">
+                            <span id="productDetailSite">Site Name</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <span class="badge bg-success py-2 px-3" id="productDetailStatus">In Stock</span>
+                            <span class="text-muted ms-2" id="productDetailLastUpdate">Last updated: 1 hour ago</span>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-primary" id="productDetailBuyButton" target="_blank">
+                                <i class="fas fa-shopping-cart me-1"></i> Buy Now
+                            </a>
+                            <button class="btn btn-outline-primary" id="productDetailSetAlert">
+                                <i class="fas fa-bell me-1"></i> Set Alert
+                            </button>
+                        </div>
+                        
+                        <div class="notification-setup d-none" id="notificationSetup">
+                            <h6>Set Price Alert</h6>
+                            <form id="alertForm">
+                                <div class="mb-3">
+                                    <label for="alertPrice" class="form-label">Notify me when price is below:</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="alertPrice" min="0" step="0.01">
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-bell me-1"></i> Save Alert
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="price-history-chart">
+                    <h5>Price History</h5>
+                    <canvas id="priceHistoryChart" height="200"></canvas>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Available on Other Sites</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="otherSitesTable">
+                            <thead>
+                                <tr>
+                                    <th>Site</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Screenshot Modal -->
+<div class="modal fade" id="screenshotModal" tabindex="-1" aria-labelledby="screenshotModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="screenshotModalLabel">Site Screenshot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <img src="" class="img-fluid" id="screenshotImg" alt="Site Screenshot">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Alert Modal -->
+<div class="modal fade" id="addAlertModal" tabindex="-1" aria-labelledby="addAlertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAlertModalLabel">Add Stock Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAlertForm">
+                    <div class="mb-3">
+                        <label for="alertCollection" class="form-label">Collection</label>
+                        <select class="form-select" id="alertCollection" required>
+                            <option value="">Select a collection</option>
+                            {% for collection in collections %}
+                            <option value="{{ collection }}">{{ collection }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertProduct" class="form-label">Product (optional)</label>
+                        <input type="text" class="form-control" id="alertProduct" placeholder="Leave empty for all products">
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertSite" class="form-label">Website (optional)</label>
+                        <input type="text" class="form-control" id="alertSite" placeholder="Leave empty for all sites">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="alertMinPrice" class="form-label">Min Price (€)</label>
+                                <input type="number" class="form-control" id="alertMinPrice" value="0" min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="alertMaxPrice" class="form-label">Max Price (€)</label>
+                                <input type="number" class="form-control" id="alertMaxPrice" value="9999" min="0" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="alertNotifyEmail" checked>
+                        <label class="form-check-label" for="alertNotifyEmail">
+                            Email Notifications
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="alertNotifyBrowser" checked>
+                        <label class="form-check-label" for="alertNotifyBrowser">
+                            Browser Notifications
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveAlertButton">Save Alert</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Global variables
+    let collectionData = {};
+    let filteredProducts = [];
+    let allProducts = [];
+    let currentFilters = {
+        search: '',
+        priceMin: 0,
+        priceMax: 200,
+        availability: 'all',
+        site: 'all',
+        sortBy: 'relevance'
+    };
+    
+    // DOM Elements
+    const allProductsContainer = document.getElementById('allProductsContainer');
+    const refreshCollectionsBtn = document.getElementById('refreshCollections');
+    const searchProductsInput = document.getElementById('searchProducts');
+    const sortProductsSelect = document.getElementById('sortProducts');
+    const filterSitesSelect = document.getElementById('filterSites');
+    const applyFiltersBtn = document.getElementById('applyFilters');
+    const quickFilterBtns = document.querySelectorAll('.quick-filter');
+    
+    // Price history chart
+    let priceHistoryChart;
+    
+    // Fetch collections data
+    function fetchCollectionsData() {
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.collection_results) {
+                    collectionData = data.collection_results;
+                    
+                    // Extract all products
+                    allProducts = [];
+                    let totalProducts = 0;
+                    let inStockProducts = 0;
+                    
+                    Object.values(collectionData).forEach(collection => {
+                        totalProducts += collection.products.length;
+                        inStockProducts += collection.in_stock_count;
+                        
+                        collection.products.forEach(product => {
+                            // Add collection name to product
+                            product.collection = collection.name;
+                            // Add image URL to product
+                            product.image_url = collection.image_url;
+                            
+                            allProducts.push(product);
+                        });
+                    });
+                    
+                    // Update counters
+                    document.getElementById('productsCount').textContent = totalProducts;
+                    document.getElementById('inStockCount').textContent = inStockProducts;
+                    document.getElementById('allProductsCount').textContent = allProducts.length;
+                    
+                    // Update individual collection counters
+                    Object.entries(collectionData).forEach(([name, data]) => {
+                        const counterId = `${name.toLowerCase().replace(/\s+/g, '-')}Count`;
+                        const counter = document.getElementById(counterId);
+                        if (counter) {
+                            counter.textContent = data.products.length;
+                        }
+                    });
+                    
+                    // Apply initial filtering
+                    filteredProducts = [...allProducts];
+                    applyFilters();
+                    
+                    // Render products
+                    renderAllProducts();
+                    renderCollectionProducts();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching collections data:', error);
+                showToast('Error', 'Failed to load collections data. Please try again.', 'danger');
+            });
+    }
+    
+    // Apply filters to products
+    function applyFilters() {
+        filteredProducts = allProducts.filter(product => {
+            // Search filter
+            if (currentFilters.search && !product.name.toLowerCase().includes(currentFilters.search.toLowerCase())) {
+                return false;
+            }
+            
+            // Price filter
+            const price = parseFloat(product.price);
+            if (isNaN(price) || price < currentFilters.priceMin || price > currentFilters.priceMax) {
+                return false;
+            }
+            
+            // Availability filter
+            if (currentFilters.availability === 'in-stock' && !product.available) {
+                return false;
+            } else if (currentFilters.availability === 'out-of-stock' && product.available) {
+                return false;
+            }
+            
+            // Site filter
+            if (currentFilters.site !== 'all' && !product.site.toLowerCase().includes(currentFilters.site.toLowerCase())) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // Sort products
+        sortProducts();
+        
+        // Update counters
+        document.getElementById('allProductsCount').textContent = filteredProducts.length;
+        
+        // Render products
+        renderAllProducts();
+        renderCollectionProducts();
+    }
+    
+    // Sort products based on current sort selection
+    function sortProducts() {
+        filteredProducts.sort((a, b) => {
+            switch (currentFilters.sortBy) {
+                case 'price-low':
+                    return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+                case 'price-high':
+                    return (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0);
+                case 'name':
+                    return a.name.localeCompare(b.name);
+                case 'last-updated':
+                    const dateA = new Date(a.date + ' ' + a.timestamp);
+                    const dateB = new Date(b.date + ' ' + b.timestamp);
+                    return dateB - dateA;
+                default: // relevance
+                    // Sort by availability first, then by price
+                    if (a.available && !b.available) return -1;
+                    if (!a.available && b.available) return 1;
+                    return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+            }
+        });
+    }
+    
+    // Render all products in the All Collections tab
+    function renderAllProducts() {
+        if (filteredProducts.length === 0) {
+            allProductsContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h4>No products found</h4>
+                        <p class="text-muted">Try adjusting your filters to see more products.</p>
+                        <button class="btn btn-primary" id="resetFilters">
+                            <i class="fas fa-undo me-1"></i> Reset Filters
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listener to reset filters button
+            const resetFiltersBtn = document.getElementById('resetFilters');
+            if (resetFiltersBtn) {
+                resetFiltersBtn.addEventListener('click', resetFilters);
+            }
+            
+            return;
+        }
+        
+        let html = '';
+        
+        filteredProducts.forEach(product => {
+            const statusClass = product.available ? 'in-stock' : 'out-of-stock';
+            const statusText = product.available ? 'In Stock' : 'Out of Stock';
+            const price = product.price && product.price !== 'N/A' ? `${product.price}€` : 'Price unavailable';
+            
+            html += `
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="product-card">
+                        <div class="product-image" style="background-image: url('${product.image_url || 'https://via.placeholder.com/300x300?text=No+Image'}')">
+                            <div class="product-status-badge ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="product-info">
+                            <h5 class="product-title">${product.name}</h5>
+                            <div class="product-price">${price}</div>
+                            <div class="product-site">${product.site}</div>
+                            <div class="product-update">Updated: ${product.date} ${product.timestamp}</div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm btn-primary view-product-btn" 
+                                        data-name="${product.name}"
+                                        data-price="${product.price}"
+                                        data-site="${product.site}"
+                                        data-available="${product.available}"
+                                        data-url="${product.url}"
+                                        data-collection="${product.collection}"
+                                        data-image="${product.image_url || ''}"
+                                        data-date="${product.date} ${product.timestamp}">
+                                    <i class="fas fa-eye me-1"></i> View Details
+                                </button>
+                                ${product.available ? 
+                                `<a href="${product.url}" target="_blank" class="btn btn-sm btn-success">
+                                    <i class="fas fa-shopping-cart me-1"></i> Buy Now
+                                </a>` : 
+                                `<button class="btn btn-sm btn-outline-primary set-alert-btn"
+                                        data-name="${product.name}"
+                                        data-collection="${product.collection}">
+                                    <i class="fas fa-bell me-1"></i> Set Alert
+                                </button>`}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        allProductsContainer.innerHTML = html;
+        
+        // Add event listeners to view product buttons
+        document.querySelectorAll('.view-product-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productData = {
+                    name: this.getAttribute('data-name'),
+                    price: this.getAttribute('data-price'),
+                    site: this.getAttribute('data-site'),
+                    available: this.getAttribute('data-available') === 'true',
+                    url: this.getAttribute('data-url'),
+                    collection: this.getAttribute('data-collection'),
+                    image: this.getAttribute('data-image'),
+                    date: this.getAttribute('data-date')
+                };
+                
+                openProductDetailModal(productData);
+            });
+        });
+        
+        // Add event listeners to set alert buttons
+        document.querySelectorAll('.set-alert-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const name = this.getAttribute('data-name');
+                const collection = this.getAttribute('data-collection');
+                
+                openAddAlertModal(collection, name);
+            });
+        });
+    }
+    
+    // Render products for each collection tab
+    function renderCollectionProducts() {
+        Object.entries(collectionData).forEach(([name, data]) => {
+            const containerId = `${name.toLowerCase().replace(/\s+/g, '-')}Container`;
+            const container = document.getElementById(containerId);
+            
+            if (!container) return;
+            
+            // Filter products for this collection
+            const collectionProducts = filteredProducts.filter(product => product.collection === name);
+            
+            if (collectionProducts.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h4>No products found</h4>
+                            <p class="text-muted">Try adjusting your filters to see more products.</p>
+                            <button class="btn btn-primary reset-filters">
+                                <i class="fas fa-undo me-1"></i> Reset Filters
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            collectionProducts.forEach(product => {
+                const statusClass = product.available ? 'in-stock' : 'out-of-stock';
+                const statusText = product.available ? 'In Stock' : 'Out of Stock';
+                const price = product.price && product.price !== 'N/A' ? `${product.price}€` : 'Price unavailable';
+                
+                html += `
+                    <div class="col-lg-3 col-md-4 col-sm-6">
+                        <div class="product-card">
+                            <div class="product-image" style="background-image: url('${data.image_url || 'https://via.placeholder.com/300x300?text=No+Image'}')">
+                                <div class="product-status-badge ${statusClass}">${statusText}</div>
+                            </div>
+                            <div class="product-info">
+                                <h5 class="product-title">${product.name}</h5>
+                                <div class="product-price">${price}</div>
+                                <div class="product-site">${product.site}</div>
+                                <div class="product-update">Updated: ${product.date} ${product.timestamp}</div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-sm btn-primary view-product-btn" 
+                                            data-name="${product.name}"
+                                            data-price="${product.price}"
+                                            data-site="${product.site}"
+                                            data-available="${product.available}"
+                                            data-url="${product.url}"
+                                            data-collection="${product.collection}"
+                                            data-image="${data.image_url || ''}"
+                                            data-date="${product.date} ${product.timestamp}">
+                                        <i class="fas fa-eye me-1"></i> View Details
+                                    </button>
+                                    ${product.available ? 
+                                    `<a href="${product.url}" target="_blank" class="btn btn-sm btn-success">
+                                        <i class="fas fa-shopping-cart me-1"></i> Buy Now
+                                    </a>` : 
+                                    `<button class="btn btn-sm btn-outline-primary set-alert-btn"
+                                            data-name="${product.name}"
+                                            data-collection="${product.collection}">
+                                        <i class="fas fa-bell me-1"></i> Set Alert
+                                    </button>`}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Add event listeners to view product buttons
+            container.querySelectorAll('.view-product-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productData = {
+                        name: this.getAttribute('data-name'),
+                        price: this.getAttribute('data-price'),
+                        site: this.getAttribute('data-site'),
+                        available: this.getAttribute('data-available') === 'true',
+                        url: this.getAttribute('data-url'),
+                        collection: this.getAttribute('data-collection'),
+                        image: this.getAttribute('data-image'),
+                        date: this.getAttribute('data-date')
+                    };
+                    
+                    openProductDetailModal(productData);
+                });
+            });
+            
+            // Add event listeners to set alert buttons
+            container.querySelectorAll('.set-alert-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const name = this.getAttribute('data-name');
+                    const collection = this.getAttribute('data-collection');
+                    
+                    openAddAlertModal(collection, name);
+                });
+            });
+            
+            // Add event listeners to reset filters buttons
+            container.querySelectorAll('.reset-filters').forEach(btn => {
+                btn.addEventListener('click', resetFilters);
+            });
+        });
+    }
+    
+    // Reset all filters to default values
+    function resetFilters() {
+        currentFilters = {
+            search: '',
+            priceMin: 0,
+            priceMax: 200,
+            availability: 'all',
+            site: 'all',
+            sortBy: 'relevance'
+        };
+        
+        // Reset form fields
+        searchProductsInput.value = '';
+        sortProductsSelect.value = 'relevance';
+        filterSitesSelect.value = 'all';
+        
+        // Reset quick filter buttons
+        quickFilterBtns.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-filter') === 'all') {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Update UI with new filters
+        applyFilters();
+        
+        showToast('Filters Reset', 'All filters have been reset to default values.', 'info');
+    }
+    
+    // Open product detail modal
+    function openProductDetailModal(productData) {
+        // Update modal content
+        document.getElementById('productDetailTitle').textContent = productData.name;
+        document.getElementById('productDetailPrice').textContent = productData.price && productData.price !== 'N/A' ? `${productData.price}€` : 'Price unavailable';
+        document.getElementById('productDetailSite').textContent = productData.site;
+        document.getElementById('productDetailImage').src = productData.image || 'https://via.placeholder.com/300x300?text=No+Image';
+        document.getElementById('productDetailBuyButton').href = productData.url;
+        
+        // Set site icon
+        const siteIconUrl = getSiteIconUrl(productData.site);
+        document.getElementById('productDetailSiteIcon').src = siteIconUrl;
+        
+        // Set status badge
+        const statusBadge = document.getElementById('productDetailStatus');
+        if (productData.available) {
+            statusBadge.textContent = 'In Stock';
+            statusBadge.className = 'badge bg-success py-2 px-3';
+            document.getElementById('productDetailBuyButton').classList.remove('disabled');
+        } else {
+            statusBadge.textContent = 'Out of Stock';
+            statusBadge.className = 'badge bg-danger py-2 px-3';
+            document.getElementById('productDetailBuyButton').classList.add('disabled');
+        }
+        
+        // Set last update
+        document.getElementById('productDetailLastUpdate').textContent = `Last updated: ${productData.date}`;
+        
+        // Initialize price history chart
+        initPriceHistoryChart();
+        
+        // Populate other sites table
+        populateOtherSitesTable(productData);
+        
+        // Show/hide set alert form
+        const productDetailSetAlert = document.getElementById('productDetailSetAlert');
+        const notificationSetup = document.getElementById('notificationSetup');
+        
+        productDetailSetAlert.addEventListener('click', function() {
+            notificationSetup.classList.toggle('d-none');
+        });
+        
+        // Handle alert form submission
+        const alertForm = document.getElementById('alertForm');
+        alertForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const alertPrice = document.getElementById('alertPrice').value;
+            
+            if (!alertPrice) {
+                showToast('Error', 'Please enter a price for the alert.', 'danger');
+                return;
+            }
+            
+            // Send alert data to server
+            fetch('/api/user/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    collection: productData.collection,
+                    product: productData.name,
+                    site: productData.site,
+                    min_price: 0,
+                    max_price: parseFloat(alertPrice)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showToast('Alert Created', 'You will be notified when this product is in stock and below your target price.', 'success');
+                    notificationSetup.classList.add('d-none');
+                } else {
+                    showToast('Error', data.message || 'Failed to create alert.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error creating alert:', error);
+                showToast('Error', 'Failed to create alert. Please try again.', 'danger');
+            });
+        });
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('productDetailModal'));
+        modal.show();
+    }
+    
+    // Initialize price history chart
+    function initPriceHistoryChart() {
+        const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+        
+        // Sample data for demonstration
+        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const data = [65, 59, 80, 81, 56, 55];
+        
+        if (priceHistoryChart) {
+            priceHistoryChart.destroy();
+        }
+        
+        priceHistoryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Price History (€)',
+                    data: data,
+                    backgroundColor: 'rgba(59, 91, 167, 0.2)',
+                    borderColor: 'rgba(59, 91, 167, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw + '€';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Populate other sites table in product detail modal
+    function populateOtherSitesTable(productData) {
+        const table = document.getElementById('otherSitesTable');
+        const tbody = table.querySelector('tbody');
+        
+        // Find other sites with the same or similar product
+        const similarProducts = allProducts.filter(product => 
+            product.name.includes(productData.name.substring(0, 20)) && // Check for similar name
+            product.site !== productData.site && // Exclude current site
+            product.collection === productData.collection // Same collection
+        );
+        
+        if (similarProducts.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center">No other sites available for this product.</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        similarProducts.forEach(product => {
+            const statusClass = product.available ? 'success' : 'danger';
+            const statusText = product.available ? 'In Stock' : 'Out of Stock';
+            const price = product.price && product.price !== 'N/A' ? `${product.price}€` : 'N/A';
+            
+            html += `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${getSiteIconUrl(product.site)}" class="site-icon me-2" alt="${product.site}">
+                            ${product.site}
+                        </div>
+                    </td>
+                    <td class="fw-bold">${price}</td>
+                    <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                    <td>
+                        <a href="${product.url}" target="_blank" class="btn btn-sm btn-primary ${!product.available ? 'disabled' : ''}">
+                            <i class="fas fa-external-link-alt me-1"></i> Visit
+                        </a>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+    
+    // Get site icon URL based on site name
+    function getSiteIconUrl(siteName) {
+        const site = siteName.toLowerCase();
+        
+        if (site.includes('amazon')) {
+            return 'https://www.amazon.com/favicon.ico';
+        } else if (site.includes('fnac')) {
+            return 'https://www.fnac.com/favicon.ico';
+        } else if (site.includes('cultura')) {
+            return 'https://www.cultura.com/favicon.ico';
+        } else if (site.includes('carrefour')) {
+            return 'https://www.carrefour.fr/favicon.ico';
+        } else if (site.includes('joueclub')) {
+            return 'https://www.joueclub.fr/favicon.ico';
+        } else if (site.includes('king')) {
+            return 'https://www.king-jouet.com/favicon.ico';
+        }
+        
+        return 'https://via.placeholder.com/16';
+    }
+    
+    // Open add alert modal
+    function openAddAlertModal(collection, productName = '') {
+        // Set initial values
+        document.getElementById('alertCollection').value = collection || '';
+        document.getElementById('alertProduct').value = productName || '';
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('addAlertModal'));
+        modal.show();
+    }
+    
+    // Event: Refresh collections
+    refreshCollectionsBtn.addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing...';
+        
+        fetchCollectionsData();
+        
+        setTimeout(() => {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh';
+            showToast('Collections Refreshed', 'Collection data has been updated.', 'success');
+        }, 1000);
+    });
+    
+    // Event: Apply filters
+    applyFiltersBtn.addEventListener('click', function() {
+        currentFilters.search = searchProductsInput.value;
+        currentFilters.sortBy = sortProductsSelect.value;
+        currentFilters.site = filterSitesSelect.value;
+        
+        applyFilters();
+    });
+    
+    // Event: Quick filter buttons
+    quickFilterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            
+            // Update active button
+            quickFilterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Handle filter type
+            if (filter === 'in-stock' || filter === 'out-of-stock') {
+                currentFilters.availability = filter;
+            } else if (filter === 'all') {
+                currentFilters.availability = 'all';
+                currentFilters.site = 'all';
+            } else {
+                // Site filter
+                currentFilters.site = filter;
+                currentFilters.availability = 'all';
+            }
+            
+            applyFilters();
+        });
+    });
+    
+    // Event: Save alert button
+    document.getElementById('saveAlertButton').addEventListener('click', function() {
+        const collection = document.getElementById('alertCollection').value;
+        const product = document.getElementById('alertProduct').value;
+        const site = document.getElementById('alertSite').value;
+        const minPrice = parseFloat(document.getElementById('alertMinPrice').value);
+        const maxPrice = parseFloat(document.getElementById('alertMaxPrice').value);
+        const notifyEmail = document.getElementById('alertNotifyEmail').checked;
+        const notifyBrowser = document.getElementById('alertNotifyBrowser').checked;
+        
+        if (!collection) {
+            showToast('Error', 'Please select a collection.', 'danger');
+            return;
+        }
+        
+        // Send alert data to server
+        fetch('/api/user/notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                collection: collection,
+                product: product,
+                site: site,
+                min_price: minPrice,
+                max_price: maxPrice,
+                notify_email: notifyEmail,
+                notify_browser: notifyBrowser
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast('Alert Created', 'You will be notified when products matching your criteria are in stock.', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addAlertModal'));
+                modal.hide();
+            } else {
+                showToast('Error', data.message || 'Failed to create alert.', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating alert:', error);
+            showToast('Error', 'Failed to create alert. Please try again.', 'danger');
+        });
+    });
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch collections data
+        fetchCollectionsData();
+        
+        // Initialize price range slider (mock for this template)
+        // In a real implementation, you would use a library like noUiSlider
+        const priceRangeSlider = document.getElementById('priceRangeSlider');
+        if (priceRangeSlider) {
+            // Mock implementation - you would replace this with actual slider initialization
+            priceRangeSlider.innerHTML = `
+                <div class="progress">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            `;
+        }
+        
+        // Process URL parameters for pre-selected collection
+        const urlParams = new URLSearchParams(window.location.search);
+        const collectionParam = urlParams.get('collection');
+        
+        if (collectionParam) {
+            const tabId = `${collectionParam.toLowerCase().replace(/\s+/g, '-')}-tab`;
+            const tab = document.getElementById(tabId);
+            
+            if (tab) {
+                setTimeout(() => {
+                    tab.click();
+                }, 500);
+            }
+        }
+    });
+</script>
+{% endblock %}

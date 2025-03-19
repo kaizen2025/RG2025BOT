@@ -10,193 +10,270 @@ import chromedriver_autoinstaller
 from PIL import Image
 import base64
 import io
+import requests
 
-# Importer le script principal de surveillance
-import roland_garros_bot
+# Import the main monitoring script
+import pokemon_scraper
 
-# Charger les variables d'environnement
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Stockage des données pour l'interface web
+# Data storage for web interface
 stats = {
-    "derniere_verification": None,
-    "prochaine_verification": None,
-    "nombre_verifications": 0,
-    "derniere_alerte": None,
-    "sites_surveilles": roland_garros_bot.SITES,
-    "resultats": {},
-    "alertes_actives": []
+    "last_check": None,
+    "next_check": None,
+    "total_checks": 0,
+    "last_alert": None,
+    "monitored_sites": pokemon_scraper.SITES,
+    "results": {},
+    "active_alerts": [],
+    "collections_data": {
+        collection["name"]: {
+            "image_url": collection["image_url"],
+            "keywords": collection["keywords"]
+        } for collection in pokemon_scraper.POKEMON_COLLECTIONS
+    }
 }
 
-# Créer un dossier logs s'il n'existe pas
+# Create logs folder if it doesn't exist
 if not os.path.exists('logs'):
     os.makedirs('logs')
 
 # Configure log file handler
-file_handler = logging.FileHandler('logs/bot_activity.log')
+file_handler = logging.FileHandler('logs/pokemon_bot_activity.log')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
 
-# Ajouter le handler au logger root
+# Add handler to root logger
 root_logger = logging.getLogger()
 root_logger.addHandler(file_handler)
 
-# Surcharger les fonctions pour mettre à jour les stats
-original_verifier_site = roland_garros_bot.verifier_site
+# Override check function to update stats
+original_check_site_product = pokemon_scraper.check_site_product
 
-def verifier_site_wrapper(site_info):
-    """Enveloppe la fonction de vérification pour mettre à jour les statistiques."""
-    disponible, message, screenshots = original_verifier_site(site_info)
+def check_site_product_wrapper(site_info, product_info):
+    """Wrap the check function to update statistics."""
+    available, message, screenshots, product_data = original_check_site_product(site_info, product_info)
     
-    # Mettre à jour les stats
-    stats["resultats"][site_info["nom"]] = {
-        "disponible": disponible,
+    # Update stats
+    result_key = f"{site_info['name']}_{product_info['name']}"
+    stats["results"][result_key] = {
+        "available": available,
         "message": message,
         "timestamp": datetime.now().strftime("%H:%M:%S"),
         "date": datetime.now().strftime("%d/%m/%Y"),
-        "screenshots": screenshots  # Ajouter les screenshots
+        "screenshots": screenshots,
+        "product_data": product_data,
+        "site_name": site_info["name"],
+        "product_name": product_info["name"],
+        "collection": product_info["collection"],
+        "url": product_info["url"]
     }
     
-    # Si disponible, ajouter aux alertes actives
-    if disponible:
-        # Vérifier si l'alerte existe déjà
-        alerte_existante = False
-        for alerte in stats["alertes_actives"]:
-            if alerte["source"] == site_info["nom"]:
-                alerte_existante = True
-                # Mettre à jour l'alerte existante
-                alerte["message"] = message
-                alerte["timestamp"] = datetime.now().strftime("%H:%M:%S")
-                alerte["date"] = datetime.now().strftime("%d/%m/%Y")
-                alerte["screenshots"] = screenshots  # Ajouter les screenshots
+    # If available, add to active alerts
+    if available:
+        # Check if alert already exists
+        existing_alert = False
+        for alert in stats["active_alerts"]:
+            if alert["source"] == site_info["name"] and alert["product_name"] == product_info["name"]:
+                existing_alert = True
+                # Update existing alert
+                alert["message"] = message
+                alert["timestamp"] = datetime.now().strftime("%H:%M:%S")
+                alert["date"] = datetime.now().strftime("%d/%m/%Y")
+                alert["screenshots"] = screenshots
+                alert["product_data"] = product_data
                 break
         
-        if not alerte_existante:
-            stats["alertes_actives"].append({
-                "source": site_info["nom"],
+        if not existing_alert:
+            stats["active_alerts"].append({
+                "source": site_info["name"],
+                "product_name": product_info["name"],
+                "collection": product_info["collection"],
                 "message": message,
-                "url": site_info["url"],
+                "url": product_info["url"],
                 "timestamp": datetime.now().strftime("%H:%M:%S"),
                 "date": datetime.now().strftime("%d/%m/%Y"),
-                "screenshots": screenshots  # Ajouter les screenshots
+                "screenshots": screenshots,
+                "product_data": product_data
             })
     
-    return disponible, message, screenshots  # Retourner screenshots aussi
+    return available, message, screenshots, product_data
 
-# Remplacer la fonction originale
-roland_garros_bot.verifier_site = verifier_site_wrapper
+# Replace original function
+pokemon_scraper.check_site_product = check_site_product_wrapper
 
-# Adapter la fonction principale pour mettre à jour les stats
-original_programme_principal = roland_garros_bot.programme_principal
+# Adapt main function to update stats
+original_main_program = pokemon_scraper.main_program
 
-def programme_principal_wrapper():
-    """Enveloppe la fonction principale pour mettre à jour les statistiques."""
-    stats["nombre_verifications"] = 0
+def main_program_wrapper():
+    """Wrap the main function to update statistics."""
+    stats["total_checks"] = 0
     
     while True:
-        maintenant = datetime.now()
-        stats["nombre_verifications"] += 1
-        stats["derniere_verification"] = maintenant.strftime("%d/%m/%Y %H:%M:%S")
+        now = datetime.now()
+        stats["total_checks"] += 1
+        stats["last_check"] = now.strftime("%d/%m/%Y %H:%M:%S")
         
-        # Exécuter une vérification
-        logging.info(f"Vérification #{stats['nombre_verifications']} - {maintenant.strftime('%d/%m/%Y %H:%M:%S')}")
+        # Execute a check
+        logging.info(f"Check #{stats['total_checks']} - {now.strftime('%d/%m/%Y %H:%M:%S')}")
         
-        # Liste pour collecter toutes les alertes positives
-        alertes = []
+        # List to collect all positive alerts
+        alerts = []
         
-        # 1. Vérifier tous les sites configurés
-        for site in roland_garros_bot.SITES:
+        # 1. Check all configured sites
+        for site in pokemon_scraper.SITES:
             try:
-                disponible, message, screenshots = roland_garros_bot.verifier_site(site)
-                if disponible:
-                    alertes.append({
-                        "source": site["nom"],
-                        "message": message,
-                        "url": site["url"],
-                        "screenshots": screenshots
-                    })
-                    logging.info(f"DÉTECTION sur {site['nom']}: {message}")
-                else:
-                    logging.info(f"{site['nom']}: {message}")
+                logging.info(f"Checking site: {site['name']}")
+                for product in site['products']:
+                    available, message, screenshots, product_data = pokemon_scraper.check_site_product(site, product)
+                    if available:
+                        alerts.append({
+                            "source": site["name"],
+                            "product_name": product["name"],
+                            "collection": product["collection"],
+                            "message": message,
+                            "url": product["url"],
+                            "screenshots": screenshots,
+                            "product_data": product_data
+                        })
+                        logging.info(f"DETECTION on {site['name']} for {product['name']}: {message}")
+                    else:
+                        logging.info(f"{site['name']} for {product['name']}: {message}")
+                    
+                    # Short pause between products
+                    time.sleep(1)
                 
-                # Pause courte entre chaque site pour éviter d'être bloqué
-                time.sleep(1)  # Réduit à 1 seconde pour l'interface web
+                # Short pause between sites
+                time.sleep(2)
             except Exception as e:
-                logging.error(f"Erreur lors de la vérification de {site['nom']}: {e}")
+                logging.error(f"Error checking {site['name']}: {e}")
         
-        # Si des alertes ont été trouvées, envoyer des notifications
-        if alertes:
-            # Construire l'email avec toutes les alertes
-            sujet = f"ALERTE - Billets Roland-Garros disponibles pour le {roland_garros_bot.DATE_CIBLE}!"
+        # If alerts were found, send notifications
+        if alerts:
+            # Build email with all alerts
+            subject = f"ALERT - Pokemon cards in stock!"
             
-            # Construire le contenu de l'email
-            contenu_email = f"""
-            Bonjour,
+            # Build email content
+            email_content = """
+            Hello,
             
-            Des disponibilités potentielles ont été détectées pour Roland-Garros le {roland_garros_bot.DATE_CIBLE}.
+            Stock availability has been detected for Pokemon collections.
             
-            Détails des alertes:
+            Alert details:
             """
             
-            # Ajouter chaque alerte
-            for idx, alerte in enumerate(alertes, 1):
-                contenu_email += f"""
-            {idx}. {alerte['source']}
-               {alerte['message']}
-               URL: {alerte['url']}
+            # Add each alert
+            for idx, alert in enumerate(alerts, 1):
+                email_content += f"""
+            {idx}. {alert['source']} - {alert['product_name']}
+               {alert['message']}
+               URL: {alert['url']}
             """
             
-            contenu_email += """
-            Veuillez vérifier rapidement ces sites pour confirmer et effectuer votre achat.
+            email_content += """
+            Please check these sites quickly to confirm and make your purchase.
             
-            Ce message a été envoyé automatiquement par votre bot de surveillance.
+            This message was automatically sent by your monitoring bot.
             """
             
-            # Envoyer les notifications
-            notification_ok = roland_garros_bot.envoyer_notifications(sujet, contenu_email, alertes)
+            # Send notifications
+            notification_ok = pokemon_scraper.send_notifications(subject, email_content, alerts)
             if notification_ok:
-                stats["derniere_alerte"] = maintenant.strftime("%d/%m/%Y %H:%M:%S")
-                logging.info(f"ALERTES ENVOYÉES - {len(alertes)} détections")
+                stats["last_alert"] = now.strftime("%d/%m/%Y %H:%M:%S")
+                logging.info(f"ALERTS SENT - {len(alerts)} detections")
             else:
-                logging.error("Échec de l'envoi des notifications")
+                logging.error("Failed to send notifications")
         
-        # Calculer la prochaine vérification
-        prochaine_verification = maintenant.timestamp() + roland_garros_bot.INTERVALLE_VERIFICATION
-        stats["prochaine_verification"] = datetime.fromtimestamp(prochaine_verification).strftime("%d/%m/%Y %H:%M:%S")
+        # Calculate next check
+        check_interval = pokemon_scraper.random.randint(
+            pokemon_scraper.CHECK_INTERVAL_MIN, 
+            pokemon_scraper.CHECK_INTERVAL_MAX
+        )
+        next_check_time = now.timestamp() + check_interval
+        stats["next_check"] = datetime.fromtimestamp(next_check_time).strftime("%d/%m/%Y %H:%M:%S")
         
-        # Écrire dans les logs l'heure de la prochaine vérification
-        logging.info(f"Prochaine vérification: {stats['prochaine_verification']}")
+        # Log next check time
+        logging.info(f"Next check: {stats['next_check']}")
         
-        # Sauvegarder les stats dans un fichier JSON pour persistance
+        # Save stats to JSON file for persistence
         try:
             with open('logs/stats.json', 'w') as f:
                 json.dump(stats, f)
         except Exception as e:
-            logging.error(f"Erreur lors de la sauvegarde des stats: {e}")
+            logging.error(f"Error saving stats: {e}")
         
-        # Attendre avant la prochaine vérification
-        time.sleep(roland_garros_bot.INTERVALLE_VERIFICATION)
+        # Wait before next check
+        time.sleep(check_interval)
 
-# Remplacer la fonction principale
-roland_garros_bot.programme_principal = programme_principal_wrapper
+# Replace main function
+pokemon_scraper.main_program = main_program_wrapper
 
-# Routes Flask
+# Fetch product image from URL and convert to base64
+def fetch_image_as_base64(image_url):
+    try:
+        response = requests.get(image_url, timeout=10)
+        if response.status_code == 200:
+            image_data = base64.b64encode(response.content).decode('utf-8')
+            return image_data
+        return None
+    except Exception as e:
+        logging.error(f"Error fetching image {image_url}: {e}")
+        return None
+
+# Flask routes
 @app.route('/')
 def index():
-    return render_template('index.html', date_cible=roland_garros_bot.DATE_CIBLE)
+    collections = [c["name"] for c in pokemon_scraper.POKEMON_COLLECTIONS]
+    return render_template('index.html', collections=collections)
 
 @app.route('/api/stats')
 def get_stats():
-    return jsonify(stats)
+    # Enhance stats with collection data
+    enhanced_stats = stats.copy()
+    
+    # Group results by collection
+    collection_results = {}
+    for collection in pokemon_scraper.POKEMON_COLLECTIONS:
+        collection_name = collection["name"]
+        collection_results[collection_name] = {
+            "name": collection_name,
+            "image_url": collection["image_url"],
+            "products": [],
+            "in_stock_count": 0
+        }
+    
+    # Add products to their collections
+    for result_key, result in stats["results"].items():
+        if "collection" in result:
+            collection_name = result["collection"]
+            if collection_name in collection_results:
+                product_info = {
+                    "name": result["product_name"],
+                    "site": result["site_name"],
+                    "url": result["url"],
+                    "available": result["available"],
+                    "price": result["product_data"].get("price", "N/A"),
+                    "message": result["message"],
+                    "timestamp": result["timestamp"],
+                    "date": result["date"]
+                }
+                collection_results[collection_name]["products"].append(product_info)
+                if result["available"]:
+                    collection_results[collection_name]["in_stock_count"] += 1
+    
+    enhanced_stats["collection_results"] = collection_results
+    
+    return jsonify(enhanced_stats)
 
 @app.route('/api/logs')
 def get_logs():
     try:
-        with open('logs/bot_activity.log', 'r') as f:
+        with open('logs/pokemon_bot_activity.log', 'r') as f:
             logs = f.readlines()
-        return jsonify(logs[-100:])  # Renvoyer les 100 dernières lignes
+        return jsonify(logs[-100:])  # Return last 100 lines
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -211,6 +288,10 @@ def handle_proxy():
         os.environ["PROXY_HOST"] = data.get("host", "")
         os.environ["PROXY_PORT"] = data.get("port", "")
         os.environ["PROXY_COUNTRY"] = data.get("country", "fr")
+        
+        # Reload proxy manager
+        pokemon_scraper.proxy_manager = pokemon_scraper.ProxyManager()
+        
         return jsonify({"status": "success"})
     else:
         return jsonify({
@@ -221,44 +302,78 @@ def handle_proxy():
             "country": os.getenv("PROXY_COUNTRY", "fr")
         })
 
-@app.route('/api/auto-reservation', methods=['GET', 'POST'])
-def handle_auto_reservation():
-    if request.method == 'POST':
-        data = request.json
-        # Update auto-reservation settings
-        os.environ["AUTO_RESERVATION"] = str(data.get("enabled", False)).lower()
-        os.environ["RESERVATION_EMAIL"] = data.get("email", "")
-        os.environ["RESERVATION_PASSWORD"] = data.get("password", "")
-        os.environ["RESERVATION_MAX_PRIX"] = str(data.get("max_price", 1000))
-        return jsonify({"status": "success"})
-    else:
-        return jsonify({
-            "enabled": os.getenv("AUTO_RESERVATION", "False").lower() in ["true", "1", "yes", "oui"],
-            "email": os.getenv("RESERVATION_EMAIL", ""),
-            "max_price": float(os.getenv("RESERVATION_MAX_PRIX", "1000"))
-        })
+@app.route('/api/refresh/<site_name>/<product_name>', methods=['POST'])
+def refresh_product(site_name, product_name):
+    """Manually check a specific product."""
+    try:
+        for site in pokemon_scraper.SITES:
+            if site["name"] == site_name:
+                for product in site["products"]:
+                    if product["name"] == product_name:
+                        available, message, screenshots, product_data = pokemon_scraper.check_site_product(site, product)
+                        return jsonify({
+                            "status": "success",
+                            "available": available,
+                            "message": message,
+                            "product_data": product_data
+                        })
+        return jsonify({"status": "error", "message": "Product or site not found"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/circuit-breakers')
 def get_circuit_breakers():
-    if hasattr(roland_garros_bot, 'circuit_breakers'):
+    if hasattr(pokemon_scraper, 'circuit_breakers'):
         return jsonify({
-            nom: {"state": cb.state, "failure_count": cb.failure_count} 
-            for nom, cb in roland_garros_bot.circuit_breakers.items()
+            name: {"state": cb.state, "failure_count": cb.failure_count} 
+            for name, cb in pokemon_scraper.circuit_breakers.items()
         })
     return jsonify({})
+
+@app.route('/api/collections')
+def get_collections():
+    collections = []
+    for collection in pokemon_scraper.POKEMON_COLLECTIONS:
+        # Fetch image as base64 if not already cached
+        image_data = None
+        if collection["image_url"]:
+            image_data = fetch_image_as_base64(collection["image_url"])
+        
+        collections.append({
+            "name": collection["name"],
+            "keywords": collection["keywords"],
+            "image_data": image_data,
+            "image_url": collection["image_url"]
+        })
+    return jsonify(collections)
+
+@app.route('/api/sites')
+def get_sites():
+    """Get information about monitored sites."""
+    sites_info = []
+    for site in pokemon_scraper.SITES:
+        sites_info.append({
+            "name": site["name"],
+            "base_url": site["base_url"],
+            "type": site["type"],
+            "country": site["country"],
+            "priority": site["priority"],
+            "product_count": len(site["products"])
+        })
+    return jsonify(sites_info)
 
 def run_app():
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 
 def run_bot():
-    # Lancer le bot
-    roland_garros_bot.programme_principal()
+    # Start the bot
+    pokemon_scraper.main_program()
 
 if __name__ == "__main__":
-    # Démarrer le bot dans un thread séparé
+    # Start the bot in a separate thread
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.daemon = True
     bot_thread.start()
     
-    # Exécuter l'application Flask
+    # Run Flask application
     run_app()

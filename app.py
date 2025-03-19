@@ -15,6 +15,14 @@ from db_persistence import run_db_persistence
 # Import modules
 from auth import auth_bp, get_user_by_id, get_user_preferences, login_required, admin_required, init_db
 import pokemon_scraper
+# Force l'initialisation de la base de données au démarrage
+try:
+    logging.info("Initialisation forcée de la base de données au démarrage")
+    from auth import init_db
+    init_db()
+    logging.info("Base de données initialisée avec succès au démarrage")
+except Exception as e:
+    logging.error(f"ERREUR CRITIQUE lors de l'initialisation de la base de données: {e}")
 
 # Load environment variables
 load_dotenv()

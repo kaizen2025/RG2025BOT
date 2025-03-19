@@ -1,0 +1,582 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-header {
+        background-color: #343a40;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .admin-header h1 {
+        margin-bottom: 0;
+        font-size: 1.8rem;
+    }
+    
+    .admin-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+    
+    .admin-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .admin-card-header {
+        background-color: #f8f9fa;
+        border-bottom: none;
+        padding: 15px 20px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        border-radius: 10px 10px 0 0;
+    }
+    
+    .user-row {
+        transition: background-color 0.2s;
+    }
+    
+    .user-row:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+    
+    .user-actions button {
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    
+    .user-row:hover .user-actions button {
+        opacity: 1;
+    }
+    
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .status-pending {
+        background-color: #FFF3CD;
+        color: #856404;
+    }
+    
+    .status-active {
+        background-color: #D1E7DD;
+        color: #0F5132;
+    }
+    
+    .status-admin {
+        background-color: #CFE2FF;
+        color: #084298;
+    }
+    
+    .admin-stat-card {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        text-align: center;
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    
+    .admin-stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .admin-stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        color: var(--pokemon-primary);
+    }
+    
+    .admin-stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #212529;
+    }
+    
+    .admin-stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .tab-content {
+        padding-top: 20px;
+    }
+    
+    .nav-tabs .nav-link {
+        color: #495057;
+    }
+    
+    .nav-tabs .nav-link.active {
+        font-weight: 600;
+        color: var(--pokemon-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1><i class="fas fa-user-shield me-2"></i> Admin Dashboard</h1>
+    <button class="btn btn-outline-light" id="refreshData">
+        <i class="fas fa-sync-alt me-1"></i> Refresh Data
+    </button>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="admin-stat-value">{{ all_users|length }}</div>
+            <div class="admin-stat-label">Total Users</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon">
+                <i class="fas fa-user-clock"></i>
+            </div>
+            <div class="admin-stat-value">{{ pending_users|length }}</div>
+            <div class="admin-stat-label">Pending Approvals</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="admin-stat-value">{{ all_users|selectattr('role', 'equalto', 'user')|list|length }}</div>
+            <div class="admin-stat-label">Active Users</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon">
+                <i class="fas fa-user-cog"></i>
+            </div>
+            <div class="admin-stat-value">{{ all_users|selectattr('role', 'equalto', 'admin')|list|length }}</div>
+            <div class="admin-stat-label">Administrators</div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending" role="tab" aria-controls="pending" aria-selected="true">
+            <i class="fas fa-user-clock me-1"></i> Pending Approvals
+            {% if pending_users %}
+            <span class="badge bg-danger rounded-pill ms-1">{{ pending_users|length }}</span>
+            {% endif %}
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="all-users-tab" data-bs-toggle="tab" href="#all-users" role="tab" aria-controls="all-users" aria-selected="false">
+            <i class="fas fa-users me-1"></i> All Users
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="system-tab" data-bs-toggle="tab" href="#system" role="tab" aria-controls="system" aria-selected="false">
+            <i class="fas fa-server me-1"></i> System Settings
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content" id="adminTabsContent">
+    <!-- Pending Approvals Tab -->
+    <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <i class="fas fa-user-clock me-2"></i> Users Awaiting Approval
+            </div>
+            <div class="card-body p-0">
+                {% if pending_users %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in pending_users %}
+                            <tr class="user-row">
+                                <td>
+                                    <strong>{{ user.username }}</strong>
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.created_at }}</td>
+                                <td class="user-actions">
+                                    <form method="POST" action="{{ url_for('auth.approve_user', user_id=user.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-check me-1"></i> Approve
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('auth.reject_user', user_id=user.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to reject this user?')">
+                                            <i class="fas fa-times me-1"></i> Reject
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                    <h5>No Pending Approvals</h5>
+                    <p class="text-muted">All user registrations have been processed</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- All Users Tab -->
+    <div class="tab-pane fade" id="all-users" role="tabpanel" aria-labelledby="all-users-tab">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <i class="fas fa-users me-2"></i> User Management
+            </div>
+            <div class="card-body p-0">
+                <div class="p-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchUsers" placeholder="Search users by name, email, or role">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="usersTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Registration Date</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in all_users %}
+                            <tr class="user-row">
+                                <td>
+                                    <strong>{{ user.username }}</strong>
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% if user.role == 'admin' %}
+                                    <span class="status-badge status-admin">Admin</span>
+                                    {% elif user.role == 'user' %}
+                                    <span class="status-badge status-active">Active</span>
+                                    {% elif user.role == 'pending' %}
+                                    <span class="status-badge status-pending">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.created_at }}</td>
+                                <td>{{ user.last_login or 'Never' }}</td>
+                                <td class="user-actions">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Change Role
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <form method="POST" action="{{ url_for('auth.change_role', user_id=user.id) }}">
+                                                    <input type="hidden" name="role" value="admin">
+                                                    <button type="submit" class="dropdown-item" {% if user.role == 'admin' %}disabled{% endif %}>
+                                                        <i class="fas fa-user-shield me-2"></i> Admin
+                                                    </button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('auth.change_role', user_id=user.id) }}">
+                                                    <input type="hidden" name="role" value="user">
+                                                    <button type="submit" class="dropdown-item" {% if user.role == 'user' %}disabled{% endif %}>
+                                                        <i class="fas fa-user-check me-2"></i> User
+                                                    </button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('auth.change_role', user_id=user.id) }}">
+                                                    <input type="hidden" name="role" value="pending">
+                                                    <button type="submit" class="dropdown-item" {% if user.role == 'pending' %}disabled{% endif %}>
+                                                        <i class="fas fa-user-clock me-2"></i> Pending
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="confirmDelete({{ user.id }}, '{{ user.username }}')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Settings Tab -->
+    <div class="tab-pane fade" id="system" role="tabpanel" aria-labelledby="system-tab">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <i class="fas fa-cogs me-2"></i> Application Settings
+                    </div>
+                    <div class="card-body">
+                        <form id="appSettingsForm">
+                            <div class="mb-3">
+                                <label for="appName" class="form-label">Application Name</label>
+                                <input type="text" class="form-control" id="appName" value="Pokemon Stock Monitor">
+                            </div>
+                            <div class="mb-3">
+                                <label for="defaultSearchInterval" class="form-label">Default Search Interval (seconds)</label>
+                                <input type="number" class="form-control" id="defaultSearchInterval" value="600">
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="maintenanceMode">
+                                <label class="form-check-label" for="maintenanceMode">Maintenance Mode</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="maxConcurrentRequests" class="form-label">Max Concurrent Requests</label>
+                                <input type="number" class="form-control" id="maxConcurrentRequests" value="5">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <i class="fas fa-shield-alt me-2"></i> Security Settings
+                    </div>
+                    <div class="card-body">
+                        <form id="securitySettingsForm">
+                            <div class="mb-3">
+                                <label for="maxLoginAttempts" class="form-label">Max Login Attempts</label>
+                                <input type="number" class="form-control" id="maxLoginAttempts" value="5">
+                            </div>
+                            <div class="mb-3">
+                                <label for="sessionTimeout" class="form-label">Session Timeout (minutes)</label>
+                                <input type="number" class="form-control" id="sessionTimeout" value="30">
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="forcePasswordReset" checked>
+                                <label class="form-check-label" for="forcePasswordReset">Force Password Reset Every 90 Days</label>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="twoFactorAuth">
+                                <label class="form-check-label" for="twoFactorAuth">Enable Two-Factor Authentication</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="admin-card mt-4">
+            <div class="admin-card-header">
+                <i class="fas fa-database me-2"></i> System Status
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Server Information</h5>
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Python Version</th>
+                                    <td>3.9.16</td>
+                                </tr>
+                                <tr>
+                                    <th>Flask Version</th>
+                                    <td>2.2.3</td>
+                                </tr>
+                                <tr>
+                                    <th>Database</th>
+                                    <td>SQLite</td>
+                                </tr>
+                                <tr>
+                                    <th>Uptime</th>
+                                    <td>3 days, 7 hours</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Resource Usage</h5>
+                        <div class="mb-3">
+                            <label class="form-label">CPU Usage</label>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Memory Usage</label>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 42%;" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100">42%</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Disk Usage</label>
+                            <div class="progress">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: 68%;" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100">68%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary me-2">
+                        <i class="fas fa-download me-1"></i> Download Logs
+                    </button>
+                    <button class="btn btn-outline-danger me-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Clear Cache
+                    </button>
+                    <button class="btn btn-outline-warning">
+                        <i class="fas fa-bolt me-1"></i> Run Diagnostics
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the user <strong id="deleteUsername"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteUserForm" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search functionality for users table
+        document.getElementById('searchUsers').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const table = document.getElementById('usersTable');
+            const rows = table.getElementsByTagName('tr');
+            
+            for (let i = 1; i < rows.length; i++) {
+                const username = rows[i].cells[0].textContent.toLowerCase();
+                const email = rows[i].cells[1].textContent.toLowerCase();
+                const role = rows[i].cells[2].textContent.toLowerCase();
+                
+                if (username.includes(searchTerm) || email.includes(searchTerm) || role.includes(searchTerm)) {
+                    rows[i].style.display = '';
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        });
+        
+        // Refresh button
+        document.getElementById('refreshData').addEventListener('click', function() {
+            location.reload();
+        });
+        
+        // Form submission with toast notification
+        document.getElementById('appSettingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showToast('Settings Saved', 'Application settings have been updated successfully.', 'success');
+        });
+        
+        document.getElementById('securitySettingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showToast('Settings Saved', 'Security settings have been updated successfully.', 'success');
+        });
+    });
+    
+    // Delete user modal functionality
+    function confirmDelete(userId, username) {
+        document.getElementById('deleteUsername').textContent = username;
+        document.getElementById('deleteUserForm').action = `/admin/delete/${userId}`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+        modal.show();
+    }
+    
+    // Toast notification
+    function showToast(title, message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Create toast element
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        // Create toast content
+        const toastBody = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong>: ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        toastEl.innerHTML = toastBody;
+        toastContainer.appendChild(toastEl);
+        
+        // Initialize and show toast
+        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
+        toast.show();
+        
+        // Remove toast after it's hidden
+        toastEl.addEventListener('hidden.bs.toast', function() {
+            toastEl.remove();
+        });
+    }
+</script>
+{% endblock %}

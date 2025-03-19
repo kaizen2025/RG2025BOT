@@ -38,6 +38,23 @@ file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
 root_logger = logging.getLogger()
 root_logger.addHandler(file_handler)
 
+def ensure_database_exists():
+    """S'assure que la base de données existe et contient les tables nécessaires"""
+    try:
+        # Initialiser la base de données
+        init_db()
+        logging.info("Base de données initialisée avec succès")
+        
+        # Créer le répertoire logs s'il n'existe pas
+        if not os.path.exists('logs'):
+            os.makedirs('logs')
+            logging.info("Répertoire logs créé")
+        
+        return True
+    except Exception as e:
+        logging.error(f"Erreur lors de l'initialisation de la base de données: {e}")
+        return False
+
 # Data storage for web interface
 stats = {
     "last_check": None,
@@ -647,22 +664,31 @@ def run_bot():
     pokemon_scraper.main_program()
 
 if __name__ == "__main__":
+    # Initialiser la base de données AVANT toute autre opération
+    if not ensure_database_exists():
+        logging.error("ERREUR CRITIQUE: Échec de l'initialisation de la base de données")
+        exit(1)
+    
     # En environnement de production (comme Render), utilisez le port fourni par l'environnement
     port = int(os.environ.get("PORT", 5000))
-    
-    # Initialiser la base de données
-    init_db()
     
     # Démarrer le thread de persistance de la base de données sur Render
     on_render = os.environ.get('RENDER', 'false').lower() == 'true'
     if on_render:
+        # Démarrer la persistence en premier
         persistence_thread = threading.Thread(target=run_db_persistence)
         persistence_thread.daemon = True
         persistence_thread.start()
         logging.info("Thread de persistance de la base de données démarré")
-    
-    # Sur Render, démarrez le bot dans un thread uniquement si on n'est pas en période de suspension
-    if on_render:
+        
+        # Attendre 5 secondes pour que la persistence puisse télécharger/initialiser la BD
+        import time
+        time.sleep(5)
+        
+        # Vérifier une dernière fois que la BD existe
+        ensure_database_exists()
+        
+        # Sur Render, démarrez le bot simplifié
         bot_thread = Thread(target=simplified_bot)
         bot_thread.daemon = True
         bot_thread.start()

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Pokemon Stock Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --pokemon-primary: #3B5BA7;
+            --pokemon-secondary: #FFCB05;
+            --pokemon-accent: #FF0000;
+            --pokemon-light: #f8f9fa;
+            --pokemon-dark: #212529;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--pokemon-primary) 0%, var(--pokemon-secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px 0;
+        }
+        
+        .register-container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 0.5s ease-in-out;
+            margin: 20px auto;
+        }
+        
+        .register-header {
+            background-color: var(--pokemon-primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .register-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('/static/images/pattern.png');
+            background-size: cover;
+            opacity: 0.1;
+            z-index: 0;
+        }
+        
+        .register-header h2 {
+            position: relative;
+            z-index: 1;
+            margin: 0;
+            font-weight: 700;
+        }
+        
+        .register-body {
+            padding: 30px;
+        }
+        
+        .form-control:focus {
+            border-color: var(--pokemon-primary);
+            box-shadow: 0 0 0 0.25rem rgba(59, 91, 167, 0.25);
+        }
+        
+        .btn-primary {
+            background-color: var(--pokemon-primary);
+            border-color: var(--pokemon-primary);
+        }
+        
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: #2A4889;
+            border-color: #2A4889;
+        }
+        
+        .register-footer {
+            text-align: center;
+            padding: 0 30px 20px;
+            color: #6c757d;
+        }
+        
+        .register-footer a {
+            color: var(--pokemon-primary);
+            text-decoration: none;
+        }
+        
+        .register-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .form-label {
+            font-weight: 500;
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo-container i {
+            font-size: 3rem;
+            color: var(--pokemon-secondary);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .alert {
+            margin-bottom: 20px;
+            animation: slideDown 0.3s ease-in-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .password-strength {
+            height: 5px;
+            transition: all 0.3s;
+            margin-top: 5px;
+            border-radius: 5px;
+        }
+        
+        .password-feedback {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            transition: all 0.3s;
+        }
+        
+        .password-requirements {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .password-requirement {
+            margin-bottom: 5px;
+        }
+        
+        .password-requirement i {
+            width: 20px;
+        }
+        
+        .requirement-met {
+            color: #198754;
+        }
+        
+        .requirement-not-met {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="register-container">
+                    <div class="register-header">
+                        <h2>Create an Account</h2>
+                    </div>
+                    <div class="register-body">
+                        <div class="logo-container">
+                            <i class="fas fa-gamepad"></i>
+                        </div>
+                        
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        <form method="POST" id="registerForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" value="{{ first_name or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" value="{{ last_name or '' }}">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ username or '' }}" required>
+                                </div>
+                                <div class="form-text">Username must be at least 3 characters and can only contain letters, numbers, underscores and hyphens.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="password-strength" id="passwordStrength"></div>
+                                <div class="password-feedback" id="passwordFeedback"></div>
+                                <div class="password-requirements mt-2">
+                                    <div class="password-requirement" id="lengthRequirement">
+                                        <i class="fas fa-times-circle requirement-not-met"></i> At least 8 characters
+                                    </div>
+                                    <div class="password-requirement" id="uppercaseRequirement">
+                                        <i class="fas fa-times-circle requirement-not-met"></i> At least one uppercase letter
+                                    </div>
+                                    <div class="password-requirement" id="lowercaseRequirement">
+                                        <i class="fas fa-times-circle requirement-not-met"></i> At least one lowercase letter
+                                    </div>
+                                    <div class="password-requirement" id="numberRequirement">
+                                        <i class="fas fa-times-circle requirement-not-met"></i> At least one number
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label for="password_confirm" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password_confirm" name="password_confirm" required minlength="8">
+                                </div>
+                                <div class="invalid-feedback" id="passwordMatchFeedback">
+                                    Passwords do not match
+                                </div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="agree_terms" name="agree_terms" required>
+                                <label class="form-check-label" for="agree_terms">I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a> <span class="text-danger">*</span></label>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg" id="registerButton" disabled>
+                                    <i class="fas fa-user-plus me-2"></i> Register
+                                </button>
+                            </div>
+                            <div class="text-center mt-3">
+                                <small class="text-muted">Fields marked with <span class="text-danger">*</span> are required</small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="register-footer">
+                        <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Terms and Conditions Modal -->
+    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>1. Acceptance of Terms</h6>
+                    <p>
+                        By registering and using the Pokemon Stock Monitor service, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use this service.
+                    </p>
+                    
+                    <h6>2. Account Registration</h6>
+                    <p>
+                        When you register for an account, you will need to provide accurate and complete information. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.
+                    </p>
+                    
+                    <h6>3. Service Description</h6>
+                    <p>
+                        Pokemon Stock Monitor is a service designed to track stock availability of Pokemon products across various retailers. All information provided by the service is for informational purposes only.
+                    </p>
+                    
+                    <h6>4. User Content</h6>
+                    <p>
+                        You are solely responsible for any content you submit to the service. You agree not to post any content that is unlawful, harmful, threatening, abusive, harassing, defamatory, vulgar, or otherwise objectionable.
+                    </p>
+                    
+                    <h6>5. Service Limitations</h6>
+                    <p>
+                        The service is provided "as is" without warranties of any kind. We do not guarantee the accuracy, timeliness, or completeness of the stock information provided.
+                    </p>
+                    
+                    <h6>6. Privacy Policy</h6>
+                    <p>
+                        Your use of the service is also governed by our Privacy Policy, which is incorporated by reference into these Terms and Conditions.
+                    </p>
+                    
+                    <h6>7. Changes to Terms</h6>
+                    <p>
+                        We reserve the right to modify these terms at any time. Continued use of the service after any such changes constitutes your consent to such changes.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const password = document.getElementById('password');
+            const passwordConfirm = document.getElementById('password_confirm');
+            const passwordStrength = document.getElementById('passwordStrength');
+            const passwordFeedback = document.getElementById('passwordFeedback');
+            const registerButton = document.getElementById('registerButton');
+            const agreeTerms = document.getElementById('agree_terms');
+            const togglePassword = document.getElementById('togglePassword');
+            const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+            const lengthRequirement = document.getElementById('lengthRequirement');
+            const uppercaseRequirement = document.getElementById('uppercaseRequirement');
+            const lowercaseRequirement = document.getElementById('lowercaseRequirement');
+            const numberRequirement = document.getElementById('numberRequirement');
+            const form = document.getElementById('registerForm');
+            
+            // Toggle password visibility
+            togglePassword.addEventListener('click', function() {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                togglePasswordIcon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+            });
+            
+            // Check password strength
+            password.addEventListener('input', function() {
+                const val = password.value;
+                let strength = 0;
+                let feedback = '';
+                
+                // Update requirements
+                if (val.length >= 8) {
+                    lengthRequirement.innerHTML = '<i class="fas fa-check-circle requirement-met"></i> At least 8 characters';
+                    strength += 25;
+                } else {
+                    lengthRequirement.innerHTML = '<i class="fas fa-times-circle requirement-not-met"></i> At least 8 characters';
+                }
+                
+                if (/[A-Z]/.test(val)) {
+                    uppercaseRequirement.innerHTML = '<i class="fas fa-check-circle requirement-met"></i> At least one uppercase letter';
+                    strength += 25;
+                } else {
+                    uppercaseRequirement.innerHTML = '<i class="fas fa-times-circle requirement-not-met"></i> At least one uppercase letter';
+                }
+                
+                if (/[a-z]/.test(val)) {
+                    lowercaseRequirement.innerHTML = '<i class="fas fa-check-circle requirement-met"></i> At least one lowercase letter';
+                    strength += 25;
+                } else {
+                    lowercaseRequirement.innerHTML = '<i class="fas fa-times-circle requirement-not-met"></i> At least one lowercase letter';
+                }
+                
+                if (/[0-9]/.test(val)) {
+                    numberRequirement.innerHTML = '<i class="fas fa-check-circle requirement-met"></i> At least one number';
+                    strength += 25;
+                } else {
+                    numberRequirement.innerHTML = '<i class="fas fa-times-circle requirement-not-met"></i> At least one number';
+                }
+                
+                // Set color based on strength
+                let color = '';
+                if (strength <= 25) {
+                    color = '#dc3545'; // Danger (red)
+                    feedback = 'Password is weak';
+                } else if (strength <= 50) {
+                    color = '#ffc107'; // Warning (yellow)
+                    feedback = 'Password is moderate';
+                } else if (strength <= 75) {
+                    color = '#0dcaf0'; // Info (blue)
+                    feedback = 'Password is good';
+                } else {
+                    color = '#198754'; // Success (green)
+                    feedback = 'Password is strong';
+                }
+                
+                passwordStrength.style.width = strength + '%';
+                passwordStrength.style.backgroundColor = color;
+                passwordFeedback.textContent = feedback;
+                passwordFeedback.style.color = color;
+                
+                checkIfFormValid();
+            });
+            
+            // Check if passwords match
+            passwordConfirm.addEventListener('input', function() {
+                if (password.value !== passwordConfirm.value) {
+                    passwordConfirm.classList.add('is-invalid');
+                    document.getElementById('passwordMatchFeedback').style.display = 'block';
+                } else {
+                    passwordConfirm.classList.remove('is-invalid');
+                    document.getElementById('passwordMatchFeedback').style.display = 'none';
+                }
+                
+                checkIfFormValid();
+            });
+            
+            // Enable/disable register button
+            agreeTerms.addEventListener('change', checkIfFormValid);
+            
+            function checkIfFormValid() {
+                const passwordValid = password.value.length >= 8 && 
+                                     /[A-Z]/.test(password.value) && 
+                                     /[a-z]/.test(password.value) && 
+                                     /[0-9]/.test(password.value);
+                const passwordsMatch = password.value === passwordConfirm.value;
+                const termsAgreed = agreeTerms.checked;
+                
+                if (passwordValid && passwordsMatch && termsAgreed && form.checkValidity()) {
+                    registerButton.disabled = false;
+                } else {
+                    registerButton.disabled = true;
+                }
+            }
+            
+            // Prevent form submission if validation fails
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+        });
+    </script>
+</body>
+</html>

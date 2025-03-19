@@ -171,22 +171,36 @@ def run_db_persistence():
     """Fonction principale de persistance de la base de données"""
     logger.info("Démarrage du service de persistance de la base de données")
     
-    # 1. Au démarrage, récupérer la DB depuis GitHub
+    # 1. Tenter de récupérer la DB depuis GitHub
     db_downloaded = get_file_from_github()
     
-    # 2. Vérifier l'intégrité - si problème, créer la base de données
+    # 2. Vérifier l'intégrité
     db_valid = False
     if db_downloaded:
         db_valid = verify_db_integrity()
+        logger.info(f"Base de données téléchargée et vérifiée: {'Valide' if db_valid else 'Invalide'}")
+    else:
+        logger.warning("Échec du téléchargement depuis GitHub")
     
-    # 3. Si pas téléchargée ou invalide, initialiser la BD
+    # 3. Si la base de données n'est pas valide, initialiser localement
     if not db_valid:
-        logger.warning("Base de données inexistante ou invalide, création du schéma...")
-        if create_db_schema():
-            # Envoyer immédiatement la base données nouvellement créée
-            upload_file_to_github()
-        else:
-            logger.error("Échec de l'initialisation de la base de données")
+        logger.info("Initialisation locale de la base de données...")
+        from auth import init_db
+        init_db()
+        db_valid = verify_db_integrity()
+        logger.info(f"Base de données initialisée localement: {'Succès' if db_valid else 'Échec'}")
+    
+    # Boucle principale
+    try:
+        while True:
+            time.sleep(60)  # Check toutes les minutes
+            if os.path.exists(DB_PATH):
+                current_hash = calculate_file_hash(DB_PATH)
+                logger.info(f"Vérification périodique de la base de données: {current_hash}")
+            else:
+                logger.error("Base de données absente lors de la vérification périodique")
+    except Exception as e:
+        logger.error(f"Erreur dans la boucle principale: {e}")
     
     # 4. Vérifier si une sauvegarde est disponible en cas d'échec
     if not db_valid and os.path.exists(f"{DB_PATH}.backup"):

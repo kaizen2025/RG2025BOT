@@ -1,6 +1,4 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
-import os
-import base64
 import json
 from datetime import datetime, timedelta
 import threading

@@ -13,8 +13,9 @@ from threading import Thread
 from db_persistence import run_db_persistence
 
 # Import modules
-from auth import auth_bp, get_user_by_id, get_user_preferences, login_required, admin_required, init_db
+from auth import auth_bp, get_user_by_id, get_user_preferences, login_required, admin_required, init_db, get_user_context
 import pokemon_scraper
+
 # Force l'initialisation de la base de données au démarrage
 try:
     logging.info("Initialisation forcée de la base de données au démarrage")
@@ -45,6 +46,31 @@ file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
 # Add handler to root logger
 root_logger = logging.getLogger()
 root_logger.addHandler(file_handler)
+
+# Ajout des filtres personnalisés pour Jinja2
+@app.template_filter('datetime')
+def parse_datetime(value):
+    """Convertit une chaîne de date en objet datetime."""
+    if not value:
+        return datetime.now()
+    try:
+        if isinstance(value, str):
+            return datetime.fromisoformat(value)
+        return value
+    except (ValueError, TypeError):
+        return datetime.now()
+
+@app.template_filter('dateformat')
+def format_datetime(value, format='%Y-%m-%d'):
+    """Formate un objet datetime selon le format spécifié."""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            return value
+    return value.strftime(format)
 
 def ensure_database_exists():
     """S'assure que la base de données existe et contient les tables nécessaires"""
@@ -169,11 +195,11 @@ def check_site_product_wrapper(site_info, product_info):
                     # Send notification based on user preferences
                     if preferences.get('notifications_email', True):
                         # Send email notification
-                        print(f"Sending email to {user['email']} about {product_name}")
+                        logging.info(f"Envoi d'un email à {user['email']} au sujet de {product_name}")
                     
                     if preferences.get('notifications_telegram', False):
                         # Send telegram notification
-                        print(f"Sending Telegram notification to {user['username']} about {product_name}")
+                        logging.info(f"Envoi d'une notification Telegram à {user['username']} au sujet de {product_name}")
             
             conn.close()
     
@@ -427,7 +453,7 @@ def get_user_context():
                 'user': user,
                 'preferences': preferences
             }
-    return None
+    return {'user': None, 'preferences': {}}
 
 # Routes
 @app.route('/')
@@ -439,30 +465,24 @@ def index():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    user_context = get_user_context()
+    context = get_user_context()
     collections = [c["name"] for c in pokemon_scraper.POKEMON_COLLECTIONS]
-    return render_template('dashboard.html', 
-                          collections=collections, 
-                          user=user_context['user'], 
-                          preferences=user_context['preferences'])
+    context['collections'] = collections
+    return render_template('dashboard.html', **context)
 
 @app.route('/collections')
 @login_required
 def collections():
-    user_context = get_user_context()
+    context = get_user_context()
     collections = [c["name"] for c in pokemon_scraper.POKEMON_COLLECTIONS]
-    return render_template('collections.html', 
-                          collections=collections,
-                          user=user_context['user'], 
-                          preferences=user_context['preferences'])
+    context['collections'] = collections
+    return render_template('collections.html', **context)
 
 @app.route('/sites')
 @login_required
 def sites():
-    user_context = get_user_context()
-    return render_template('sites.html',
-                          user=user_context['user'], 
-                          preferences=user_context['preferences'])
+    context = get_user_context()
+    return render_template('sites.html', **context)
 
 @app.route('/api/stats')
 @login_required

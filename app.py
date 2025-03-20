@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
+from flask_babel import Babel, gettext as _
 import json
 from datetime import datetime, timedelta
 import threading
@@ -83,6 +84,19 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "votre_cle_secrete_longue_et_aleatoire")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+# Initialize and configure Flask-Babel
+babel = Babel(app)
+app.config['BABEL_DEFAULT_LOCALE'] = 'fr'
+app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
+
+@babel.localeselector
+def get_locale():
+    # If the user has chosen a language, use it
+    if 'language' in session:
+        return session['language']
+    # Otherwise detect the browser language
+    return request.accept_languages.best_match(['fr', 'en'])
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -535,6 +549,13 @@ def collections():
 def sites():
     context = get_user_context()
     return render_template('sites.html', **context)
+
+# Route for changing language
+@app.route('/set-language/<language>')
+def set_language(language):
+    session['language'] = language
+    # Redirect to previous page or index
+    return redirect(request.referrer or url_for('index'))
 
 @app.route('/api/stats')
 @login_required

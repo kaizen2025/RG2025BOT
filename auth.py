@@ -11,43 +11,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("auth")
 
-def init_db():
-    """Initialise la base de données avec le schéma et l'utilisateur admin"""
-    logger.info("Début d'initialisation de la base de données")
-    if not os.path.exists(DB_PATH):
-        logger.info(f"Création du fichier {DB_PATH}")
-    
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        # Création des tables
-        logger.info("Création du schéma de la base de données")
-        cursor.execute(USER_SCHEMA)
-        cursor.execute(NOTIFICATION_SCHEMA)
-        
-        # Vérification si l'utilisateur admin existe déjà
-        admin_exists = cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'").fetchone()[0]
-        # Using a different approach to avoid backslash issues in f-strings
-        status = "Existe" if admin_exists else "N'existe pas"
-        logger.info(f"Vérification utilisateur admin: {status}")
-        
-        if not admin_exists:
-            # Création de l'utilisateur admin par défaut
-            logger.info("Création du compte admin par défaut")
-            hashed_pwd = bcrypt.generate_password_hash('admin123').decode('utf-8')
-            cursor.execute(
-                'INSERT INTO users (username, email, password, role, api_key) VALUES (?, ?, ?, ?, ?)',
-                ('admin', 'admin@pokemon-monitor.com', hashed_pwd, 'admin', str(uuid.uuid4()))
-            )
-        
-        conn.commit()
-        conn.close()
-        logger.info("Initialisation de la base de données réussie")
-    except Exception as e:
-        logger.error(f"Erreur lors de l'initialisation de la base de données: {e}")
-        raise
-
 # Initialisation
 auth_bp = Blueprint('auth', __name__)
 bcrypt = Bcrypt()
@@ -86,14 +49,29 @@ CREATE TABLE IF NOT EXISTS user_notifications (
 '''
 
 def init_db():
+    """Initialise la base de données avec le schéma et l'utilisateur admin"""
+    logger.info("Début d'initialisation de la base de données")
+    
     if not os.path.exists(DB_PATH):
+        logger.info(f"Création du fichier {DB_PATH}")
+    
+    try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        
+        # Création des tables
+        logger.info("Création du schéma de la base de données")
         cursor.execute(USER_SCHEMA)
         cursor.execute(NOTIFICATION_SCHEMA)
         
-        # Créer un compte admin par défaut
-        if not get_user_by_username('admin'):
+        # Vérification si l'utilisateur admin existe déjà
+        admin_exists = cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'").fetchone()[0]
+        status = "Existe" if admin_exists else "N'existe pas"
+        logger.info(f"Vérification utilisateur admin: {status}")
+        
+        if not admin_exists:
+            # Création de l'utilisateur admin par défaut
+            logger.info("Création du compte admin par défaut")
             hashed_pwd = bcrypt.generate_password_hash('admin123').decode('utf-8')
             cursor.execute(
                 'INSERT INTO users (username, email, password, role, api_key) VALUES (?, ?, ?, ?, ?)',
@@ -102,6 +80,11 @@ def init_db():
         
         conn.commit()
         conn.close()
+        logger.info("Initialisation de la base de données réussie")
+        return True
+    except Exception as e:
+        logger.error(f"Erreur lors de l'initialisation de la base de données: {e}")
+        raise
 
 # Fonctions d'accès à la base de données
 def get_db_connection():
@@ -298,6 +281,8 @@ def login():
             if remember:
                 # Set session to last 30 days
                 session.permanent = True
+                # Import Flask app here to avoid circular imports
+                from app import app
                 app.permanent_session_lifetime = timedelta(days=30)
             
             update_user_last_login(user['id'])
@@ -305,7 +290,7 @@ def login():
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password', 'danger')
     
@@ -475,5 +460,5 @@ def change_role(user_id):
     flash('User role updated', 'success')
     return redirect(url_for('auth.admin_dashboard'))
 
-# Initialisation de la base de données
+# Make sure the database is initialized when this module is imported
 init_db()

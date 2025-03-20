@@ -86,6 +86,19 @@ def init_db():
         logger.error(f"Erreur lors de l'initialisation de la base de données: {e}")
         raise
 
+# Fonction utilitaire pour récupérer le contexte utilisateur
+def get_user_context():
+    """Récupère les informations de l'utilisateur connecté pour les templates."""
+    if 'user_id' in session:
+        user = get_user_by_id(session['user_id'])
+        if user:
+            preferences = get_user_preferences(session['user_id'])
+            return {
+                'user': user,
+                'preferences': preferences
+            }
+    return {'user': None, 'preferences': {}}
+
 # Fonctions d'accès à la base de données
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -237,7 +250,7 @@ def admin_required(f):
         user = get_user_by_id(session['user_id'])
         if not user or user['role'] != 'admin':
             flash('Admin access required', 'danger')
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('dashboard'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -336,11 +349,10 @@ def logout():
 @auth_bp.route('/profile')
 @login_required
 def profile():
-    user = get_user_by_id(session['user_id'])
-    user_prefs = get_user_preferences(session['user_id'])
-    notifications = get_user_notifications(session['user_id'])
+    context = get_user_context()
+    context['notifications'] = get_user_notifications(session['user_id'])
     
-    return render_template('profile.html', user=user, preferences=user_prefs, notifications=notifications)
+    return render_template('profile.html', **context)
 
 @auth_bp.route('/profile/update', methods=['POST'])
 @login_required
@@ -419,16 +431,21 @@ def add_notification():
     flash('Notification preference saved', 'success')
     return redirect(url_for('auth.profile'))
 
-# Routes d'administration
+# Routes d'administration - CORRIGÉE
 @auth_bp.route('/admin')
 @admin_required
 def admin_dashboard():
     pending_users = get_pending_users()
     all_users = get_all_users()
     
-    return render_template('admin/dashboard.html', 
-                          pending_users=pending_users,
-                          all_users=all_users)
+    # Utiliser la fonction get_user_context pour récupérer les informations utilisateur
+    context = get_user_context()
+    
+    # Ajouter les utilisateurs à envoyer au template
+    context['pending_users'] = pending_users
+    context['all_users'] = all_users
+    
+    return render_template('admin/dashboard.html', **context)
 
 @auth_bp.route('/admin/approve/<int:user_id>', methods=['POST'])
 @admin_required

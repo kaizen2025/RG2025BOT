@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
 import os
+import base64
 import json
 from datetime import datetime, timedelta
 import threading
@@ -16,6 +17,7 @@ from db_persistence import run_db_persistence
 from auth import auth_bp, get_user_by_id, get_user_preferences, login_required, admin_required, init_db, get_user_context
 import pokemon_scraper
 
+
 # Force l'initialisation de la base de données au démarrage
 try:
     logging.info("Initialisation forcée de la base de données au démarrage")
@@ -24,12 +26,64 @@ try:
     logging.info("Base de données initialisée avec succès au démarrage")
 except Exception as e:
     logging.error(f"ERREUR CRITIQUE lors de l'initialisation de la base de données: {e}")
+# Création des fichiers statiques
+import os
+import base64
 
+PATTERN_PNG_BASE64 = """
+iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAADm0lE
+QVRYhcWXTUhjVxTH/y95GqOJJnEmGo1fUQnG+NUYP4rfIkWKgguXXRRcCi5cuHLlzsVs3LgRN4ILEaFQ
+KFJEiijiKPGDKFHHmHEm8WOMk5j35uy6MOO8vERnmgMXLufec+7v3nvOPecRRFFEMjExJBOJMZbMIDmP
+B5Ac/DUAUiQEiMCTSITweDyaQCCAWCwGn8/vjYQQSL5pABCeFqanpyl9fX0/LC0tfY3FYuB5HvF4HIFA
+AH6/P9R+Yz90HDDGAABdXV2fLC4uXlxcXEy3t7frW1paaDabDV1dXQM6na7p+PiYOjk5+TfAMzfS0NAA
+jUaDkpIS6HQ6KJVKaDQa5OXlobS0FHK5HO3t7bqWlpbKpaWlc+rFixcQRREikQitra0YHBxEd3c3enp6
+4HQ6cfv2bbS1taG+vh4PHjxAT0/Pda/X+9EPP/300V8XF3NKheK7xsbGf+bn50WVShXq7+9PaNnR0RE2
+NjaE/f19we12C9Fo9K9QJPLVwg8/flum0eD9MhnkBIFoLIbFxUXU1NTA5/OB53nwPI9IJILt7W2o1Wrs
+7Ozg5s2bWF9fR1dXF5qamkDHYjHcVqnwxa1b+Ky+HndqavDxu++CLy/H+vo6dDodKisrIYpiYgWiKMLr
+9aKiogJlZWWQSqWorq5OPDPGiHhj4jgOHMeBpmlQFAWapkFRFKRSafg8T8MfjYDjuLRj/G+RSAS/7+/j
+4OAALpcLR0dHCAQCiEajiXEkRVEghBBhkUiEZWZmCoODgwLLsoLdbhe2trYEjuOEw8NDwev1Ci9fvhTm
+5uaEkZERYWxsTJiamhLm5+cFu90unJ2dCdPT08LnAwOCTqcTioqKBJVKJSiVykRjWVYQBEEQvwm/YMHt
+xvr6Og4ODnBycgKapkHTdOLaEAQBlmUhiiJisRgePnyIDx4+RDAYxPn5OXieh9frxdnZGfx+P56+egWG
+YfDRe++i9NYt6HS6RPMsKwDHcdjc3MTz58/hdDoRDocTa7+9vQ2WZREOh2G32+F2u2G32zE6OooXL16g
+sLAQRUVF6OvrS2yn+GelUu9vbGx8+/jx41+Wl5dLbTYbhoeH0dbWBoIgsLa2hu7ubhQXF+PevXuYnJzE
+3bt3IQgCrFYrCgsLYTKZsL+/j0ePHkGj0WBgYADDw8MYGxuD2Ww+G5+YmBqdmJgozeP5xMcWi4UaGhra
+Xl1dhcPhwMzMDGZmZrCzs4PZ2VlMTU1hbW0Nk5OTsFgsGB8fh8lkwtLSUtBkMo1ardbSfwDOKw1HVjp+
+lQAAAABJRU5ErkJggg==
+"""
+
+def create_static_files():
+    # Chemins des dossiers à créer
+    static_dir = 'static'
+    images_dir = os.path.join(static_dir, 'images')
+    
+    # Création des dossiers s'ils n'existent pas
+    for directory in [static_dir, images_dir]:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            print(f"Dossier créé: {directory}")
+    
+    # Création du fichier pattern.png
+    pattern_path = os.path.join(images_dir, 'pattern.png')
+    if not os.path.exists(pattern_path):
+        try:
+            # Décodage de l'image en base64
+            pattern_data = base64.b64decode(PATTERN_PNG_BASE64)
+            
+            # Écriture du fichier
+            with open(pattern_path, 'wb') as f:
+                f.write(pattern_data)
+            
+            print(f"Fichier pattern.png créé: {pattern_path}")
+        except Exception as e:
+            print(f"Erreur lors de la création du fichier pattern.png: {e}")
+
+# Exécutez la fonction au démarrage de l'application
+create_static_files()
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "pokemon_monitor_secret_key")
+app.secret_key = os.getenv("SECRET_KEY", "votre_cle_secrete_longue_et_aleatoire")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Register blueprints
